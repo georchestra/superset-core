@@ -20,6 +20,8 @@
 {% import 'appbuilder/baselib.html' as baselib %}
 
 {% block body %}
+    <script src="https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js" nonce="{{ csp_nonce() }}"></script>
+    <geor-header active-app="dash" style="height:90px"></geor-header>
     {% include 'appbuilder/general/confirm.html' %}
     {% include 'appbuilder/general/alert.html' %}
 
