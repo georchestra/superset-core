@@ -1,0 +1,16 @@
+SHELL := /bin/bash
+IMAGE=georchestra/superset
+REV=`git rev-parse --short HEAD`
+DATE=`date +%Y%m%d-%H%M`
+
+all: docker-build docker-push
+
+docker-build:
+	docker build --target dev --cache-from apache/superset-cache:3.10-slim-bookworm -t ${IMAGE}:latest . ;\
+	echo built ${IMAGE}:latest ;\
+	docker tag  ${IMAGE}:latest ${IMAGE}:${DATE}-${REV} ;\
+	echo built ${IMAGE}:${DATE}-${REV}
+
+docker-push:
+	docker push ${IMAGE}:latest ;\
+	docker push ${IMAGE}:${DATE}-${REV}
