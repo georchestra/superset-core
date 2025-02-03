@@ -76,6 +76,7 @@ class Dashboard(BaseSupersetView):
     method_permission_name = MODEL_VIEW_RW_METHOD_PERMISSION_MAP
 
     @has_access
+    @expose("/new")
     @expose("/new/")
     def new(self) -> FlaskResponse:
         """Creates a new, blank dashboard and redirects to it in edit mode"""
