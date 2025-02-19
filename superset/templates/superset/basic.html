@@ -69,9 +69,23 @@
         id="csrf_token"
         value="{{ csrf_token() if csrf_token else '' }}"
       />
+      {% if not georchestra.noheader %}
+      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"
+              nonce="{{ csp_nonce() }}"></script>
+      {% endif %}
     </head>
 
     <body {% if standalone_mode %}class="standalone" {% endif %}>
+      {% if not georchestra.noheader %}
+      <geor-header active-app='superset'
+        config-file='{{ georchestra.headerConfigFile | default("", true) }}'
+        stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'
+        height='{{ georchestra.headerHeight | default(90, true) }}'
+        logo-url='{{ georchestra.logoUrl | default("https://www.georchestra.org/public/georchestra-logo.svg", true) }}'
+        legacy-header='{{ georchestra.useLegacyHeader | default("false", true) }}'
+        legacy-url='{{ georchestra.headerUrl | default("/header/", true) }}'>
+      </geor-header>
+      {% endif %}
       {% block navbar %} {% if not standalone_mode %} {% include
       'appbuilder/navbar.html' %} {% endif %} {% endblock %} {% block body %}
       <div id="app" data-bootstrap="{{ bootstrap_data }}">

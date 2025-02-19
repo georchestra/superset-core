@@ -20,6 +20,18 @@
 {% import 'appbuilder/baselib.html' as baselib %}
 
 {% block body %}
+    {% if not georchestra.noheader %}
+    <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"
+            nonce="{{ csp_nonce() }}"></script>
+    <geor-header active-app='superset'
+        config-file='{{ georchestra.headerConfigFile | default("", true) }}'
+        stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'
+        height='{{ georchestra.headerHeight | default(90, true) }}'
+        logo-url='{{ georchestra.logoUrl | default("https://www.georchestra.org/public/georchestra-logo.svg", true) }}'
+        legacy-header='{{ georchestra.useLegacyHeader | default("false", true) }}'
+        legacy-url='{{ georchestra.headerUrl | default("/header/", true) }}'>
+    </geor-header>
+    {% endif %}
     {% include 'appbuilder/general/confirm.html' %}
     {% include 'appbuilder/general/alert.html' %}
 
