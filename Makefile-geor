@@ -6,7 +6,7 @@ DATE=`date +%Y%m%d-%H%M`
 all: docker-build docker-push
 
 docker-build:
-	docker build --target dev --cache-from apache/superset-cache:3.10-slim-bookworm -t ${IMAGE}:latest . ;\
+	docker build --target dev --build-arg BUILD_TRANSLATIONS="true" --cache-from apache/superset-cache:3.10-slim-bookworm -t ${IMAGE}:latest . ;\
 	echo built ${IMAGE}:latest ;\
 	docker tag  ${IMAGE}:latest ${IMAGE}:${DATE}-${REV} ;\
 	echo built ${IMAGE}:${DATE}-${REV}
