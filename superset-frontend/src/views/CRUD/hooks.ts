@@ -39,7 +39,7 @@ import { FetchDataConfig } from 'src/components/ListView';
 import { FilterValue } from 'src/components/ListView/types';
 import Chart, { Slice } from 'src/types/Chart';
 import copyTextToClipboard from 'src/utils/copy';
-import { ensureAppRootSanitized } from 'src/utils/pathUtils';
+import { ensureAppRoot } from 'src/utils/pathUtils';
 import SupersetText from 'src/utils/textUtils';
 import { DatabaseObject } from 'src/features/databases/types';
 import { FavoriteStatus, ImportResourceName } from './types';
@@ -596,10 +596,13 @@ export function useFavoriteStatus(
     }
     favoriteApis[type](ids).then(
       ({ result }) => {
-        const update = result.reduce((acc, element) => {
-          acc[element.id] = element.value;
-          return acc;
-        }, {});
+        const update = result.reduce<Record<string, boolean>>(
+          (acc, element) => {
+            acc[element.id] = element.value;
+            return acc;
+          },
+          {},
+        );
         updateFavoriteStatus(update);
       },
       createErrorHandler(errMsg =>
@@ -684,7 +687,7 @@ export const copyQueryLink = (
 ) => {
   copyTextToClipboard(() =>
     Promise.resolve(
-      `${window.location.origin}${ensureAppRootSanitized(`/sqllab?savedQueryId=${id}`)}`,
+      `${window.location.origin}${ensureAppRoot(`/sqllab?savedQueryId=${id}`)}`,
     ),
   )
     .then(() => {

@@ -19,7 +19,7 @@
 import { useState } from 'react';
 import { Tooltip } from 'src/components/Tooltip';
 import Modal from 'src/components/Modal';
-import { ExclamationCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import { Icons } from 'src/components/Icons';
 import Alert from 'src/components/Alert';
 import { t, useTheme } from '@superset-ui/core';
 
@@ -35,6 +35,7 @@ export interface ErrorAlertProps {
   children?: React.ReactNode; // Additional content to show in the modal
   closable?: boolean; // Show close button, default true
   showIcon?: boolean; // Show icon, default true
+  className?: string;
 }
 
 const ErrorAlert: React.FC<ErrorAlertProps> = ({
@@ -49,6 +50,7 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
   children,
   closable = true,
   showIcon = true,
+  className,
 }) => {
   const [isDescriptionVisible, setIsDescriptionVisible] = useState(
     !descriptionDetailsCollapsed,
@@ -62,11 +64,15 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
   const theme = useTheme();
   const renderTrigger = () => {
     const icon =
-      type === 'warning' ? <WarningOutlined /> : <ExclamationCircleOutlined />;
+      type === 'warning' ? (
+        <Icons.WarningOutlined />
+      ) : (
+        <Icons.ExclamationCircleOutlined />
+      );
     const color =
       type === 'warning' ? theme.colors.warning.base : theme.colors.error.base;
     return (
-      <div style={{ cursor: 'pointer' }}>
+      <div className={className} style={{ cursor: 'pointer' }}>
         <span style={{ color }}>{icon} </span>
         {errorType}
       </div>
@@ -100,13 +106,13 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
       )}
     </div>
   );
-
   const renderAlert = (closable: boolean) => (
     <Alert
       description={renderDescription()}
       type={type}
       showIcon
       closable={closable}
+      className={className}
     >
       <strong>{errorType}</strong>
       {message && (

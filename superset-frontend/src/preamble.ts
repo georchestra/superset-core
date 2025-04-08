@@ -23,7 +23,8 @@ import dayjs from 'dayjs';
 import {
   configure,
   makeApi,
-  supersetTheme,
+  // eslint-disable-next-line no-restricted-imports
+  supersetTheme, // TODO: DO not import theme directly
   initFeatureFlags,
 } from '@superset-ui/core';
 import { merge } from 'lodash';
@@ -53,7 +54,7 @@ if (typeof window !== 'undefined') {
 initFeatureFlags(bootstrapData.common.feature_flags);
 
 // Setup SupersetClient
-setupClient({ appRoot: applicationRoot(false) });
+setupClient({ appRoot: applicationRoot() });
 
 setupColors(
   bootstrapData.common.extra_categorical_color_schemes,

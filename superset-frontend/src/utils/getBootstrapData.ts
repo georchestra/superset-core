@@ -16,27 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import DOMPurify from 'dompurify';
-
 import { BootstrapData } from 'src/types/bootstrapTypes';
 import { DEFAULT_BOOTSTRAP_DATA } from 'src/constants';
 
+let cachedBootstrapData: BootstrapData | null = null;
+
 export default function getBootstrapData(): BootstrapData {
-  const appContainer = document.getElementById('app');
-  const dataBootstrap = appContainer?.getAttribute('data-bootstrap');
-  return dataBootstrap ? JSON.parse(dataBootstrap) : DEFAULT_BOOTSTRAP_DATA;
+  if (cachedBootstrapData === null) {
+    const appContainer = document.getElementById('app');
+    const dataBootstrap = appContainer?.getAttribute('data-bootstrap');
+    cachedBootstrapData = dataBootstrap
+      ? JSON.parse(dataBootstrap)
+      : DEFAULT_BOOTSTRAP_DATA;
+  }
+  // Add a fallback to ensure the returned value is always of type BootstrapData
+  return cachedBootstrapData ?? DEFAULT_BOOTSTRAP_DATA;
 }
 
-// eslint-disable-next-line import/no-mutable-exports
 const APPLICATION_ROOT_NO_TRAILING_SLASH =
   getBootstrapData().common.application_root.replace(/\/$/, '');
 
+const STATIC_ASSETS_PREFIX_NO_TRAILING_SLASH =
+  getBootstrapData().common.static_assets_prefix.replace(/\/$/, '');
+
 /**
- * @param dom_sanitize If true, run the application root through dompurify before returning
  * @returns The configured application root
  */
-export function applicationRoot(dom_sanitize = false): string {
-  return dom_sanitize
-    ? DOMPurify.sanitize(APPLICATION_ROOT_NO_TRAILING_SLASH)
-    : APPLICATION_ROOT_NO_TRAILING_SLASH;
+export function applicationRoot(): string {
+  return APPLICATION_ROOT_NO_TRAILING_SLASH;
+}
+
+/**
+ * @returns The configured static assets prefix
+ */
+export function staticAssetsPrefix(): string {
+  return STATIC_ASSETS_PREFIX_NO_TRAILING_SLASH;
 }

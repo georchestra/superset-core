@@ -37,6 +37,7 @@ from superset.reports.models import ReportSchedule, ReportScheduleType
 from superset.models.slice import Slice
 from superset.tags.models import Tag, TaggedObject, TagType, ObjectType
 from superset.utils.core import backend, override_user
+from superset.utils.screenshots import ScreenshotCachePayload
 from superset.utils import json
 
 from tests.integration_tests.base_api_tests import ApiOwnersTestCaseMixin
@@ -2436,30 +2437,27 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
         response = json.loads(rv.data.decode("utf-8"))
 
         assert rv.status_code == 422
-        assert (
-            response
-            == {
-                "errors": [
-                    {
-                        "message": "Error importing dashboard",
-                        "error_type": "GENERIC_COMMAND_ERROR",
-                        "level": "warning",
-                        "extra": {
-                            "dashboards/imported_dashboard.yaml": "Dashboard already exists and `overwrite=true` was not passed",  # noqa: E501
-                            "issue_codes": [
-                                {
-                                    "code": 1010,
-                                    "message": (
-                                        "Issue 1010 - Superset encountered an "
-                                        "error while running a command."
-                                    ),
-                                }
-                            ],
-                        },
-                    }
-                ]
-            }
-        )
+        assert response == {
+            "errors": [
+                {
+                    "message": "Error importing dashboard",
+                    "error_type": "GENERIC_COMMAND_ERROR",
+                    "level": "warning",
+                    "extra": {
+                        "dashboards/imported_dashboard.yaml": "Dashboard already exists and `overwrite=true` was not passed",  # noqa: E501
+                        "issue_codes": [
+                            {
+                                "code": 1010,
+                                "message": (
+                                    "Issue 1010 - Superset encountered an "
+                                    "error while running a command."
+                                ),
+                            }
+                        ],
+                    },
+                }
+            ]
+        }
 
         # import with overwrite flag
         buf = self.create_dashboard_import()
@@ -3042,6 +3040,18 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
 
     @with_feature_flags(THUMBNAILS=True, ENABLE_DASHBOARD_SCREENSHOT_ENDPOINTS=True)
     @pytest.mark.usefixtures("create_dashboard_with_tag")
+    def test_cache_dashboard_screenshot_success_permalink_payload(self):
+        self.login(ADMIN_USERNAME)
+        dashboard = (
+            db.session.query(Dashboard)
+            .filter(Dashboard.dashboard_title == "dash with tag")
+            .first()
+        )
+        response = self._cache_screenshot(dashboard.id, {"permalinkKey": "1234"})
+        assert response.status_code == 202
+
+    @with_feature_flags(THUMBNAILS=True, ENABLE_DASHBOARD_SCREENSHOT_ENDPOINTS=True)
+    @pytest.mark.usefixtures("create_dashboard_with_tag")
     def test_cache_dashboard_screenshot_dashboard_validation(self):
         self.login(ADMIN_USERNAME)
         dashboard = (
@@ -3069,13 +3079,15 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
     @pytest.mark.usefixtures("create_dashboard_with_tag")
     @patch("superset.dashboards.api.cache_dashboard_screenshot")
     @patch("superset.dashboards.api.DashboardScreenshot.get_from_cache_key")
-    def test_screenshot_success_png(self, mock_get_cache, mock_cache_task):
+    def test_screenshot_success_png(self, mock_get_from_cache_key, mock_cache_task):
         """
         Validate screenshot returns png
         """
         self.login(ADMIN_USERNAME)
         mock_cache_task.return_value = None
-        mock_get_cache.return_value = BytesIO(b"fake image data")
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload(
+            b"fake image data"
+        )
 
         dashboard = (
             db.session.query(Dashboard)
@@ -3083,7 +3095,7 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
             .first()
         )
         cache_resp = self._cache_screenshot(dashboard.id)
-        assert cache_resp.status_code == 202
+        assert cache_resp.status_code == 200
         cache_key = json.loads(cache_resp.data.decode("utf-8"))["cache_key"]
 
         response = self._get_screenshot(dashboard.id, cache_key, "png")
@@ -3091,20 +3103,29 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
         assert response.mimetype == "image/png"
         assert response.data == b"fake image data"
 
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload()
+        cache_resp = self._cache_screenshot(dashboard.id)
+        assert cache_resp.status_code == 202
+
     @with_feature_flags(THUMBNAILS=True, ENABLE_DASHBOARD_SCREENSHOT_ENDPOINTS=True)
     @pytest.mark.usefixtures("create_dashboard_with_tag")
     @patch("superset.dashboards.api.cache_dashboard_screenshot")
     @patch("superset.dashboards.api.build_pdf_from_screenshots")
     @patch("superset.dashboards.api.DashboardScreenshot.get_from_cache_key")
     def test_screenshot_success_pdf(
-        self, mock_get_from_cache, mock_build_pdf, mock_cache_task
+        self,
+        mock_get_from_cache_key,
+        mock_build_pdf,
+        mock_cache_task,
     ):
         """
         Validate screenshot can return pdf.
         """
         self.login(ADMIN_USERNAME)
         mock_cache_task.return_value = None
-        mock_get_from_cache.return_value = BytesIO(b"fake image data")
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload(
+            b"fake image data"
+        )
         mock_build_pdf.return_value = b"fake pdf data"
 
         dashboard = (
@@ -3113,13 +3134,17 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
             .first()
         )
         cache_resp = self._cache_screenshot(dashboard.id)
-        assert cache_resp.status_code == 202
+        assert cache_resp.status_code == 200
         cache_key = json.loads(cache_resp.data.decode("utf-8"))["cache_key"]
 
         response = self._get_screenshot(dashboard.id, cache_key, "pdf")
         assert response.status_code == 200
         assert response.mimetype == "application/pdf"
         assert response.data == b"fake pdf data"
+
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload()
+        cache_resp = self._cache_screenshot(dashboard.id)
+        assert cache_resp.status_code == 202
 
     @with_feature_flags(THUMBNAILS=True, ENABLE_DASHBOARD_SCREENSHOT_ENDPOINTS=True)
     @pytest.mark.usefixtures("create_dashboard_with_tag")
@@ -3153,10 +3178,12 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
     @pytest.mark.usefixtures("create_dashboard_with_tag")
     @patch("superset.dashboards.api.cache_dashboard_screenshot")
     @patch("superset.dashboards.api.DashboardScreenshot.get_from_cache_key")
-    def test_screenshot_invalid_download_format(self, mock_get_cache, mock_cache_task):
+    def test_screenshot_invalid_download_format(
+        self, mock_get_from_cache_key, mock_cache_task
+    ):
         self.login(ADMIN_USERNAME)
         mock_cache_task.return_value = None
-        mock_get_cache.return_value = BytesIO(b"fake png data")
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload(b"fake png data")
 
         dashboard = (
             db.session.query(Dashboard)
@@ -3165,8 +3192,12 @@ class TestDashboardApi(ApiOwnersTestCaseMixin, InsertChartMixin, SupersetTestCas
         )
 
         cache_resp = self._cache_screenshot(dashboard.id)
-        assert cache_resp.status_code == 202
+        assert cache_resp.status_code == 200
         cache_key = json.loads(cache_resp.data.decode("utf-8"))["cache_key"]
+
+        mock_get_from_cache_key.return_value = ScreenshotCachePayload()
+        cache_resp = self._cache_screenshot(dashboard.id)
+        assert cache_resp.status_code == 202
 
         response = self._get_screenshot(dashboard.id, cache_key, "invalid")
         assert response.status_code == 404

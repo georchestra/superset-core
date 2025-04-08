@@ -25,7 +25,7 @@ import {
 } from './utils';
 
 function interceptSamples() {
-  cy.intercept(`/datasource/samples*`).as('samples');
+  cy.intercept(`**/datasource/samples*`).as('samples');
 }
 
 function openModalFromMenu(chartType: string) {
@@ -61,15 +61,14 @@ function drillToDetail(targetMenuItem: string) {
 const drillToDetailBy = (targetDrill: string) => {
   interceptSamples();
 
-  cy.get('.ant-dropdown:not(.ant-dropdown-hidden)')
-    .first()
+  cy.get('.antd5-dropdown:not(.antd5-dropdown-hidden)')
     .should('be.visible')
     .find("[role='menu'] [role='menuitem']")
     .contains(/^Drill to detail by$/)
     .trigger('mouseover', { force: true });
 
   cy.get(
-    '.ant-dropdown-menu-submenu:not(.ant-dropdown-menu-submenu-hidden) [data-test="drill-to-detail-by-submenu"]',
+    '.antd5-dropdown-menu-submenu:not(.antd5-dropdown-menu-submenu-hidden) [data-test="drill-to-detail-by-submenu"]',
   )
     .should('be.visible')
     .find('[role="menuitem"]')
@@ -96,24 +95,24 @@ function testTimeChart(vizType: string) {
 
   cy.get(`[data-test-viz-type='${vizType}'] canvas`).then($canvas => {
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     drillToDetailBy('Drill to detail by 1965');
     cy.getBySel('filter-val').should('contain', '1965');
     closeModal();
 
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     drillToDetailBy('Drill to detail by boy');
     cy.getBySel('filter-val').should('contain', 'boy');
     closeModal();
 
     cy.wrap($canvas).scrollIntoView();
-    cy.wrap($canvas).trigger('mousemove', 70, 93);
-    cy.wrap($canvas).rightclick(70, 93);
+    cy.wrap($canvas).trigger('mousemove', 85, 93);
+    cy.wrap($canvas).rightclick(85, 93);
 
     drillToDetailBy('Drill to detail by all');
     cy.getBySel('filter-val').first().should('contain', '1965');
@@ -152,7 +151,7 @@ describe('Drill to detail modal', () => {
         cy.on('uncaught:exception', () => false);
         cy.wait('@samples');
         // reload
-        cy.get("[aria-label='reload']").click();
+        cy.get("[aria-label='Reload']").click();
         cy.wait('@samples');
         // make sure it started back from first page
         cy.get('.ant-pagination-item-active').should('contain', '1');
@@ -443,7 +442,7 @@ describe('Drill to detail modal', () => {
         cy.get("[data-test-viz-type='box_plot'] canvas").then($canvas => {
           const canvasWidth = $canvas.width() || 0;
           const canvasHeight = $canvas.height() || 0;
-          const canvasCenterX = canvasWidth / 3;
+          const canvasCenterX = canvasWidth / 3 + 15;
           const canvasCenterY = (canvasHeight * 5) / 6;
 
           cy.wrap($canvas).scrollIntoView();

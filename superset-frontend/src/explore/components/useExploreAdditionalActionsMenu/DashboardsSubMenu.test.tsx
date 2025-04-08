@@ -16,8 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { render, screen, waitFor } from 'spec/helpers/testing-library';
-import userEvent from '@testing-library/user-event';
+import {
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from 'spec/helpers/testing-library';
 import { Menu } from 'src/components/Menu';
 import DashboardItems from './DashboardsSubMenu';
 
@@ -74,5 +78,7 @@ test('shows link icon when hovering', async () => {
   asyncRender(3);
   expect(screen.queryByRole('img', { name: 'full' })).not.toBeInTheDocument();
   userEvent.hover(await screen.findByText('Dashboard 1'));
-  expect(await screen.findByRole('img', { name: 'full' })).toBeInTheDocument();
+  expect(
+    (await screen.findAllByRole('img', { name: 'full' }))[0],
+  ).toBeInTheDocument();
 });

@@ -35,19 +35,20 @@ type Props = {
   descriptionDetails?: ReactNode;
   errorMitigationFunction?: () => void;
   fallback?: ReactNode;
+  compact?: boolean;
 };
 
 export default function ErrorMessageWithStackTrace({
   title = DEFAULT_TITLE,
   error,
   subtitle,
-  copyText,
   link,
   stackTrace,
   source,
   description,
   descriptionDetails,
   fallback,
+  compact,
 }: Props) {
   // Check if a custom error message component was registered for this message
   if (error) {
@@ -57,6 +58,7 @@ export default function ErrorMessageWithStackTrace({
     if (ErrorMessageComponent) {
       return (
         <ErrorMessageComponent
+          compact={compact}
           error={error}
           source={source}
           subtitle={subtitle}
@@ -89,6 +91,7 @@ export default function ErrorMessageWithStackTrace({
       message={subtitle}
       description={description}
       descriptionDetails={computedDescriptionDetails}
+      compact={compact}
     />
   );
 }

@@ -18,13 +18,17 @@
  */
 import { useState, useEffect, useRef, Key } from 'react';
 
+// eslint-disable-next-line no-restricted-imports
 import AntTable, {
   ColumnsType,
   TableProps as AntTableProps,
-} from 'antd/lib/table';
-import { PaginationProps } from 'antd/lib/pagination';
+} from 'antd/lib/table'; // TODO: Remove antd
+// eslint-disable-next-line no-restricted-imports
+import { PaginationProps } from 'antd/lib/pagination'; // TODO: Remove antd
 import { t, useTheme, logging, styled } from '@superset-ui/core';
 import Loading from 'src/components/Loading';
+// eslint-disable-next-line no-restricted-imports
+import { RowSelectionType } from 'antd/lib/table/interface'; // TODO: Remove antd
 import InteractiveTableUtils from './utils/InteractiveTableUtils';
 import VirtualTable from './VirtualTable';
 
@@ -226,11 +230,12 @@ const defaultLocale = {
   cancelSort: t('Click to cancel sorting'),
 };
 
-const selectionMap = {};
+const selectionMap = {
+  [SelectionType.Multi]: 'checkbox',
+  [SelectionType.Single]: 'radio',
+  [SelectionType.Disabled]: null,
+};
 const noop = () => {};
-selectionMap[SelectionType.Multi] = 'checkbox';
-selectionMap[SelectionType.Single] = 'radio';
-selectionMap[SelectionType.Disabled] = null;
 
 export function Table<RecordType extends object>(
   props: TableProps<RecordType>,
@@ -277,7 +282,7 @@ export function Table<RecordType extends object>(
 
   const selectionTypeValue = selectionMap[selectionType];
   const rowSelection = {
-    type: selectionTypeValue,
+    type: selectionMap[selectionType] as RowSelectionType,
     selectedRowKeys,
     onChange: onSelectChange,
   };
@@ -398,7 +403,7 @@ export function Table<RecordType extends object>(
       {!virtualize && (
         <StyledTable
           {...sharedProps}
-          rowSelection={selectionTypeValue ? rowSelection : undefined}
+          rowSelection={selectionTypeValue !== null ? rowSelection : undefined}
           sticky={sticky}
         />
       )}

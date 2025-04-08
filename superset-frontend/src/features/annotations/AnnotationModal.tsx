@@ -18,16 +18,16 @@
  */
 import { FunctionComponent, useState, useEffect, ChangeEvent } from 'react';
 
-import { styled, t } from '@superset-ui/core';
+import { css, styled, t, useTheme } from '@superset-ui/core';
 import { useSingleViewResource } from 'src/views/CRUD/hooks';
 import { RangePicker } from 'src/components/DatePicker';
 import { extendedDayjs } from 'src/utils/dates';
-import Icons from 'src/components/Icons';
+import { Icons } from 'src/components/Icons';
 import Modal from 'src/components/Modal';
-import { StyledIcon } from 'src/views/CRUD/utils';
 import withToasts from 'src/components/MessageToasts/withToasts';
 import { JsonEditor } from 'src/components/AsyncAceEditor';
 
+import { OnlyKeyWithType } from 'src/utils/types';
 import { AnnotationObject } from './types';
 
 interface AnnotationModalProps {
@@ -91,6 +91,7 @@ const AnnotationModal: FunctionComponent<AnnotationModalProps> = ({
   onHide,
   show,
 }) => {
+  const theme = useTheme();
   const [disableSave, setDisableSave] = useState<boolean>(true);
   const [currentAnnotation, setCurrentAnnotation] =
     useState<AnnotationObject | null>(null);
@@ -183,7 +184,7 @@ const AnnotationModal: FunctionComponent<AnnotationModalProps> = ({
       start_dttm: currentAnnotation ? currentAnnotation.start_dttm : '',
     };
 
-    data[target.name] = target.value;
+    data[target.name as OnlyKeyWithType<typeof data, string>] = target.value;
     setCurrentAnnotation(data);
   };
 
@@ -278,9 +279,19 @@ const AnnotationModal: FunctionComponent<AnnotationModalProps> = ({
       title={
         <h4 data-test="annotation-modal-title">
           {isEditMode ? (
-            <Icons.EditAlt css={StyledIcon} />
+            <Icons.EditOutlined
+              iconSize="l"
+              css={css`
+                margin: auto ${theme.gridUnit * 2}px auto 0;
+              `}
+            />
           ) : (
-            <Icons.PlusLarge css={StyledIcon} />
+            <Icons.PlusOutlined
+              iconSize="l"
+              css={css`
+                margin: auto ${theme.gridUnit * 2}px auto 0;
+              `}
+            />
           )}
           {isEditMode ? t('Edit annotation') : t('Add annotation')}
         </h4>

@@ -22,20 +22,17 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addAlpha,
   css,
-  isFeatureEnabled,
-  FeatureFlag,
   JsonObject,
   styled,
   t,
   useTheme,
   useElementOnScreen,
 } from '@superset-ui/core';
-import { Global } from '@emotion/react';
 import { useDispatch, useSelector } from 'react-redux';
 import ErrorBoundary from 'src/components/ErrorBoundary';
 import BuilderComponentPane from 'src/dashboard/components/BuilderComponentPane';
 import DashboardHeader from 'src/dashboard/components/Header';
-import Icons from 'src/components/Icons';
+import { Icons } from 'src/components/Icons';
 import IconButton from 'src/dashboard/components/IconButton';
 import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
@@ -396,14 +393,8 @@ const DashboardBuilder = () => {
   const fullSizeChartId = useSelector<RootState, number | null>(
     state => state.dashboardState.fullSizeChartId,
   );
-  const crossFiltersEnabled = isFeatureEnabled(
-    FeatureFlag.DashboardCrossFilters,
-  );
   const filterBarOrientation = useSelector<RootState, FilterBarOrientation>(
-    ({ dashboardInfo }) =>
-      isFeatureEnabled(FeatureFlag.HorizontalFilterBar)
-        ? dashboardInfo.filterBarOrientation
-        : FilterBarOrientation.Vertical,
+    ({ dashboardInfo }) => dashboardInfo.filterBarOrientation,
   );
 
   const handleChangeTab = useCallback(
@@ -476,8 +467,7 @@ const DashboardBuilder = () => {
     ELEMENT_ON_SCREEN_OPTIONS,
   );
 
-  const showFilterBar =
-    (crossFiltersEnabled || nativeFiltersEnabled) && !editMode;
+  const showFilterBar = !editMode && nativeFiltersEnabled;
 
   const offset =
     FILTER_BAR_HEADER_HEIGHT +
@@ -657,13 +647,6 @@ const DashboardBuilder = () => {
         </Droppable>
       </StyledHeader>
       <StyledContent fullSizeChartId={fullSizeChartId}>
-        <Global
-          styles={css`
-            // @z-index-above-dashboard-header (100) + 1 = 101
-            ${fullSizeChartId &&
-            `div > .filterStatusPopover.ant-popover{z-index: 101}`}
-          `}
-        />
         {!editMode &&
           !topLevelTabs &&
           dashboardLayout[DASHBOARD_GRID_ID]?.children?.length === 0 && (

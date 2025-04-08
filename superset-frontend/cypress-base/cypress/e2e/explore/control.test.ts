@@ -51,8 +51,8 @@ describe('Datasource control', () => {
     )
       .first()
       .focus();
-    cy.focused().clear();
-    cy.focused().type(`${newMetricName}{enter}`);
+    cy.focused().clear({ force: true });
+    cy.focused().type(`${newMetricName}{enter}`, { force: true });
 
     cy.get('[data-test="datasource-modal-save"]').click();
     cy.get('.antd5-modal-confirm-btns button').contains('OK').click();
@@ -146,7 +146,7 @@ describe('Test datatable', () => {
   });
   it('Datapane loads view samples', () => {
     cy.intercept(
-      'datasource/samples?force=false&datasource_type=table&datasource_id=*',
+      '**/datasource/samples?force=false&datasource_type=table&datasource_id=*',
     ).as('Samples');
     cy.contains('Samples').click();
     cy.wait('@Samples');

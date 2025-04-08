@@ -41,6 +41,11 @@ const APP_DIR = path.resolve(__dirname, './');
 // output dir
 const BUILD_DIR = path.resolve(__dirname, '../superset/static/assets');
 const ROOT_DIR = path.resolve(__dirname, '..');
+// Public path for extracted css src:urls. All assets are compiled into the same
+// folder. This forces the src:url in the extracted css to only contain the filename
+// and will therefore be relative to the .css file itself and not have to worry about
+// any url prefix.
+const MINI_CSS_EXTRACT_PUBLICPATH = './';
 
 const {
   mode = 'development',
@@ -53,6 +58,7 @@ const isDevServer = process.argv[1].includes('webpack-dev-server');
 
 const output = {
   path: BUILD_DIR,
+  publicPath: '/static/assets/',
 };
 if (isDevMode) {
   output.filename = '[name].[contenthash:8].entry.js';
@@ -77,6 +83,7 @@ const plugins = [
 
   // creates a manifest.json mapping of name to hashed output used in template files
   new WebpackManifestPlugin({
+    publicPath: output.publicPath,
     seed: { app: 'superset' },
     // This enables us to include all relevant files for an entry
     generate: (seed, files, entrypoints) => {
@@ -90,10 +97,12 @@ const plugins = [
       const entryFiles = {};
       Object.entries(entrypoints).forEach(([entry, chunks]) => {
         entryFiles[entry] = {
-          css: chunks.filter(x => x.endsWith('.css')).map(x => `${x}`),
+          css: chunks
+            .filter(x => x.endsWith('.css'))
+            .map(x => `${output.publicPath}${x}`),
           js: chunks
             .filter(x => x.endsWith('.js') && x.match(/(?<!hot-update).js$/))
-            .map(x => `${x}`),
+            .map(x => `${output.publicPath}${x}`),
         };
       });
       return {
@@ -392,7 +401,14 @@ const config = {
         test: /\.css$/,
         include: [APP_DIR, /superset-ui.+\/src/],
         use: [
-          isDevMode ? 'style-loader' : MiniCssExtractPlugin.loader,
+          isDevMode
+            ? 'style-loader'
+            : {
+                loader: MiniCssExtractPlugin.loader,
+                options: {
+                  publicPath: MINI_CSS_EXTRACT_PUBLICPATH,
+                },
+              },
           {
             loader: 'css-loader',
             options: {
@@ -405,7 +421,14 @@ const config = {
         test: /\.less$/,
         include: APP_DIR,
         use: [
-          isDevMode ? 'style-loader' : MiniCssExtractPlugin.loader,
+          isDevMode
+            ? 'style-loader'
+            : {
+                loader: MiniCssExtractPlugin.loader,
+                options: {
+                  publicPath: MINI_CSS_EXTRACT_PUBLICPATH,
+                },
+              },
           {
             loader: 'css-loader',
             options: {
@@ -530,6 +553,9 @@ if (isDevMode) {
   });
 
   config.devServer = {
+    devMiddleware: {
+      writeToDisk: true,
+    },
     historyApiFallback: true,
     hot: true,
     port: devserverPort,
