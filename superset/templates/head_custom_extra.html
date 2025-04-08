@@ -22,3 +22,11 @@
   It will be included in the head block in every view in superset and is a
   good place to include your custom link, meta, style or script elements.
 #}
+<style>
+/* Hide login/logout menu items */
+li.antd5-menu-item-group li.antd5-menu-item[data-menu-id^="rc-menu-"][data-menu-id$="-logout"],
+header#main-menu a[href$="/login/"]
+{
+  display: none;
+}
+</style>
