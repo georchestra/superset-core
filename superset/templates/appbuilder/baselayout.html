@@ -20,9 +20,8 @@
 {% import 'appbuilder/baselib.html' as baselib %}
 
 {% block body %}
-    {% if not georchestra.noheader %}
-    <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"
-            nonce="{{ csp_nonce() }}"></script>
+    {% if georchestra and not georchestra.noheader %}
+    <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"></script>
     <geor-header active-app='superset'
         config-file='{{ georchestra.headerConfigFile | default("", true) }}'
         stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'

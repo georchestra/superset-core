@@ -69,14 +69,13 @@
         id="csrf_token"
         value="{{ csrf_token() if csrf_token else '' }}"
       />
-      {% if not georchestra.noheader %}
-      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"
-              nonce="{{ csp_nonce() }}"></script>
+      {% if georchestra and not georchestra.noheader %}
+      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"></script>
       {% endif %}
     </head>
 
     <body {% if standalone_mode %}class="standalone" {% endif %}>
-      {% if not georchestra.noheader %}
+      {% if georchestra and not georchestra.noheader %}
       <geor-header active-app='superset'
         config-file='{{ georchestra.headerConfigFile | default("", true) }}'
         stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'
