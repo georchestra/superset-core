@@ -3,7 +3,27 @@ IMAGE=georchestra/superset
 REV=`git rev-parse --short HEAD`
 DATE=`date +%Y%m%d-%H%M`
 
-all: docker-build docker-push
+all: translations docker
+
+frontend:
+	source ~/.nvm/nvm.sh ;\
+	nvm install lts/iron ;\
+	nvm use lts/iron ;\
+
+	# Install dependencies from `package-lock.json`
+	npm --prefix superset-frontend install ;\
+	# not sure this one is necessary:
+	npm --prefix superset-frontend ci ;\
+	npm --prefix superset-frontend run build ;\
+	# Build i18n support
+	npm --prefix superset-frontend run build-translation
+
+translations: frontend
+	npm --prefix superset-frontend run build-translation
+	pybabel compile -d superset/translations
+
+
+docker: docker-build docker-push
 
 docker-build:
 	docker build --target dev --build-arg BUILD_TRANSLATIONS="true" --cache-from apache/superset-cache:3.10-slim-bookworm -t ${IMAGE}:latest . ;\
@@ -14,3 +34,4 @@ docker-build:
 docker-push:
 	docker push ${IMAGE}:snapshot-${DATE}-${REV} ;\
 	docker push ${IMAGE}:latest
+
