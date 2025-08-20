@@ -70,7 +70,7 @@
         value="{{ csrf_token() if csrf_token else '' }}"
       />
       {% if georchestra and not georchestra.noheader %}
-      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}"></script>
+      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}" nonce="{{ csp_nonce() }}"></script>
       {% endif %}
     </head>
 
