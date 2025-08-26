@@ -196,7 +196,7 @@ class AbstractEventLogger(ABC):
         if user_id is None and has_request_context():
             try:
                 actual_user = g.get("user", None)
-                if actual_user is not None:
+                if actual_user is not None and not actual_user.is_anonymous:
                     db.session.add(actual_user)
                     user_id = get_user_id()
             except Exception as ex:
