@@ -140,7 +140,7 @@ msgid " near '%(highlight)s'"
 msgstr " près de '%(highlight)s'"
 
 msgid " source code of Superset's sandboxed parser"
-msgstr " code source de l'analyseur de bac à sable du standard Superset"
+msgstr " code source de l'analyseur de bac à sable de Superset"
 
 msgid ""
 " standard to ensure that the lexicographical ordering\n"
@@ -885,11 +885,11 @@ msgid "Action"
 msgstr "Action"
 
 msgid "Action Log"
-msgstr "Journaux d'actions"
+msgstr "Journal d'activité"
 
 #, fuzzy
 msgid "Action Logs"
-msgstr "Journaux d'actions"
+msgstr "Journaux d'activité"
 
 msgid "Actions"
 msgstr "Actions"
@@ -4465,7 +4465,7 @@ msgid "Database"
 msgstr "Base de données"
 
 msgid "Database Connections"
-msgstr "Connexions à la base de données"
+msgstr "Connexions aux bases de données"
 
 msgid "Database Creation Error"
 msgstr "Erreur de création de base de données"
@@ -9145,7 +9145,7 @@ msgid "No %s yet"
 msgstr "Pas encore de %s"
 
 msgid "No Data"
-msgstr "Aucune donnée"
+msgstr "Non applicable"
 
 #, fuzzy
 msgid "No Logs yet"
@@ -11257,7 +11257,7 @@ msgid "Row"
 msgstr "Rangée"
 
 msgid "Row Level Security"
-msgstr "Sécurité au niveau de la rangée"
+msgstr "Contrôle d'accès par ligne"
 
 msgid ""
 "Row Limit: percentages are calculated based on the subset of data "
@@ -13118,7 +13118,7 @@ msgid "Stop running (Ctrl + x)"
 msgstr "Arrêter l'exécution (Ctrl + x)"
 
 msgid "Stopped an unsafe database connection"
-msgstr "Une connexion non sécurisée avec la base de données a été arrêtée"
+msgstr "Une connexion non sécurisée avec la base de données a été interrompue"
 
 #, fuzzy
 msgid "Stream"
