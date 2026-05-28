@@ -11,7 +11,7 @@ build:
 docker: docker-build docker-push
 
 docker-build:
-	docker build --target dev --build-arg BUILD_TRANSLATIONS="true" -t ${IMAGE}:latest . ;\
+	docker build --target ci --build-arg BUILD_TRANSLATIONS="true" -t ${IMAGE}:latest . ;\
 	echo built ${IMAGE}:latest ;\
 	docker tag  ${IMAGE}:latest ${IMAGE}:snapshot-${DATE}-${REV} ;\
 	echo built ${IMAGE}:snapshot-${DATE}-${REV}
