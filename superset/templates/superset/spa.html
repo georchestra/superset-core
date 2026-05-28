@@ -116,6 +116,17 @@
   <body {% if standalone_mode %}class="standalone"{% endif %}>
 
     {% block body %}
+      {% if georchestra and not georchestra.noheader %}
+      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}" nonce="{{ csp_nonce() }}"></script>
+      <geor-header active-app='superset'
+          config-file='{{ georchestra.headerConfigFile | default("", true) }}'
+          stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'
+          height='{{ georchestra.headerHeight | default(90, true) }}'
+          logo-url='{{ georchestra.logoUrl | default("https://www.georchestra.org/public/georchestra-logo.svg", true) }}'
+          legacy-header='{{ georchestra.useLegacyHeader | default("false", true) }}'
+          legacy-url='{{ georchestra.headerUrl | default("/header/", true) }}'>
+      </geor-header>
+      {% endif %}
       <div id="app" data-bootstrap="{{ bootstrap_data }}">
         {% set tokens = theme_tokens | default({}) %}
         {% set spinner_style = "width: 70px; height: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" %}
