@@ -23,3 +23,14 @@
     good place to include your custom frontend code, such as
     scripts to initialize google analytics, intercom, segment, etc.
   #}
+
+{% if georchestra %}
+<style>
+/* Hide login/logout menu items */
+li.ant-menu-item-group li.ant-menu-item:has(>span>a[href$="/logout/"]),
+header#main-menu a[href$="/login/"]
+{
+  display: none;
+}li.ant-menu-item-group:nth-child(7) > ul:nth-child(2) > li:nth-child(2)
+</style>
+{% endif %}
