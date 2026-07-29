@@ -81,6 +81,7 @@ import {
 } from 'src/logger/LogUtils';
 import { Icons } from 'src/components/Icons';
 import { findPermission } from 'src/utils/findPermission';
+import { ensureAppRoot } from 'src/utils/pathUtils';
 import ExploreCtasResultsButton from '../ExploreCtasResultsButton';
 import ExploreResultsButton from '../ExploreResultsButton';
 import HighlightedSql from '../HighlightedSql';
@@ -301,7 +302,7 @@ const ResultSet = ({
   };
 
   const getExportCsvUrl = (clientId: string) =>
-    `/api/v1/sqllab/export/${clientId}/`;
+    ensureAppRoot(`/api/v1/sqllab/export/${clientId}/`);
 
   const renderControls = () => {
     if (search || visualize || csv) {
