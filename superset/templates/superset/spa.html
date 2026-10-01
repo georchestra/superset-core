@@ -61,6 +61,30 @@
         background: {{ theme_tokens.colorBgBase | default('#fff') }};
         color: #000;
       }
+      /* Stack the geOrchestra header above #app and give #app the remaining viewport height */
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      geor-header {
+        display: block;
+        flex: 0 0 auto;
+      }
+      #app {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        position: relative;
+      }
+      /* The app shell sizes itself with 100vh; size it from #app instead */
+      #app > .ant-flex-vertical {
+        min-height: 100%;
+      }
       {% endif %}
       {% if standalone_mode %}
       /* Keep body sized so screenshot waits don't see it as hidden before React mounts. */
@@ -140,17 +164,14 @@
   <body {% if standalone_mode %}class="standalone"{% endif %}>
 
     {% block body %}
-      {% if georchestra and not georchestra.noheader %}
-      <script src="{{ georchestra.headerScript | default('https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js', true) }}" nonce="{{ csp_nonce() }}"></script>
+      <script src="https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js" nonce="{{ csp_nonce() }}"></script>
       <geor-header active-app='superset'
-          config-file='{{ georchestra.headerConfigFile | default("", true) }}'
-          stylesheet='{{ georchestra.georchestraStyleSheet | default ("", true) }}'
-          height='{{ georchestra.headerHeight | default(90, true) }}'
-          logo-url='{{ georchestra.logoUrl | default("https://www.georchestra.org/public/georchestra-logo.svg", true) }}'
-          legacy-header='{{ georchestra.useLegacyHeader | default("false", true) }}'
-          legacy-url='{{ georchestra.headerUrl | default("/header/", true) }}'>
+          config-file=""
+          stylesheet=""
+          height="80"
+          logo-url="https://www.georchestra.org/public/georchestra-logo.svg"
+          legacy-header="false">
       </geor-header>
-      {% endif %}
       <div id="app" data-bootstrap="{{ bootstrap_data }}">
         {% set tokens = theme_tokens | default({}) %}
         {% set spinner_style = "width: 70px; height: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);" %}
