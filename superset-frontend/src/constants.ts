@@ -19,6 +19,10 @@
 import { DEFAULT_D3_FORMAT, DEFAULT_D3_TIME_FORMAT } from '@superset-ui/core';
 import { BootstrapData, CommonBootstrapData } from './types/bootstrapTypes';
 
+// Height of the geOrchestra header rendered above #app by spa.html. Subtract it
+// from viewport-based heights; it resolves to 0px when the header is absent.
+export const GEOR_HEADER_HEIGHT = 'var(--geor-header-height, 0px)';
+
 export const DATETIME_WITH_TIME_ZONE = 'YYYY-MM-DD HH:mm:ssZ';
 export const TIME_WITH_MS = 'HH:mm:ss.SSS';
 

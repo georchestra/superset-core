@@ -48,6 +48,7 @@ import { logEvent } from 'src/logger/actions';
 import { store } from 'src/views/store';
 import { FeatureFlag, isFeatureEnabled } from '@superset-ui/core';
 import { isUser } from 'src/types/bootstrapTypes';
+import { GEOR_HEADER_HEIGHT } from 'src/constants';
 import ExtensionsStartup from 'src/extensions/ExtensionsStartup';
 import { Splitter } from 'src/components/Splitter';
 import { ChatFloatingHost, ChatPanelHost, useChat } from 'src/core/chat';
@@ -143,12 +144,12 @@ const contentCss = css`
 // Chat panel mode locks the shell (content scrolls inside its panel); every
 // other state page-scrolls so the navbar hides on scroll.
 const lockedShellCss = css`
-  height: 100vh;
+  height: calc(100vh - ${GEOR_HEADER_HEIGHT});
   overflow: hidden;
 `;
 
 const pageScrollShellCss = css`
-  min-height: 100vh;
+  min-height: calc(100vh - ${GEOR_HEADER_HEIGHT});
 `;
 
 const pageScrollContentCss = css`

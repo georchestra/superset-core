@@ -49,7 +49,7 @@ import { Droppable } from 'src/dashboard/components/dnd/DragDroppable';
 import DashboardComponent from 'src/dashboard/containers/DashboardComponent';
 import WithPopoverMenu from 'src/dashboard/components/menu/WithPopoverMenu';
 import getDirectPathToTabIndex from 'src/dashboard/util/getDirectPathToTabIndex';
-import { URL_PARAMS } from 'src/constants';
+import { GEOR_HEADER_HEIGHT, URL_PARAMS } from 'src/constants';
 import { getUrlParam } from 'src/utils/urlUtils';
 import {
   DashboardLayout,
@@ -693,7 +693,10 @@ const DashboardBuilder = () => {
     FILTER_BAR_HEADER_HEIGHT +
     (isSticky || standaloneMode ? 0 : MAIN_HEADER_HEIGHT);
 
-  const filterBarHeight = `calc(100vh - ${offset}px)`;
+  // The geOrchestra header scrolls away with the navbar once the bar is sticky.
+  const filterBarHeight = isSticky
+    ? `calc(100vh - ${offset}px)`
+    : `calc(100vh - ${offset}px - ${GEOR_HEADER_HEIGHT})`;
   const filterBarOffset = dashboardFiltersOpen ? 0 : barTopOffset + 20;
 
   const draggableStyle = useMemo(

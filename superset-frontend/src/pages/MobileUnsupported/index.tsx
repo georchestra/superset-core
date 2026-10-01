@@ -22,6 +22,7 @@ import { t } from '@apache-superset/core/translation';
 import { css, useTheme } from '@apache-superset/core/theme';
 import { Button } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
+import { GEOR_HEADER_HEIGHT } from 'src/constants';
 
 /**
  * A mobile-friendly page shown when users try to access
@@ -54,7 +55,7 @@ function MobileUnsupported() {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: calc(100vh - 60px);
+        min-height: calc(100vh - 60px - ${GEOR_HEADER_HEIGHT});
         padding: ${theme.sizeUnit * 6}px;
         text-align: center;
         background: ${theme.colorBgContainer};

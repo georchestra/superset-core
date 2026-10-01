@@ -34,6 +34,7 @@ import { capitalize } from 'lodash/fp';
 import { addDangerToast } from 'src/components/MessageToasts/actions';
 import { useDispatch } from 'react-redux';
 import getBootstrapData from 'src/utils/getBootstrapData';
+import { GEOR_HEADER_HEIGHT } from 'src/constants';
 import { ensureAppRoot } from 'src/utils/navigationUtils';
 
 type OAuthProvider = {
@@ -163,7 +164,7 @@ export default function Login() {
       data-test="login-form"
       css={css`
         width: 100%;
-        height: calc(100vh - 200px);
+        height: calc(100vh - 200px - ${GEOR_HEADER_HEIGHT});
       `}
     >
       <StyledCard title={t('Sign in')} padded>

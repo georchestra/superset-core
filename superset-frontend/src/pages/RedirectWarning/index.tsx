@@ -29,11 +29,12 @@ import {
 } from '@superset-ui/core/components';
 import { Icons } from '@superset-ui/core/components/Icons';
 import { redirect } from 'src/utils/navigationUtils';
+import { GEOR_HEADER_HEIGHT } from 'src/constants';
 import { getTargetUrl, isUrlTrusted, trustUrl, isAllowedScheme } from './utils';
 
 const PageContainer = styled(Flex)`
   ${({ theme }) => css`
-    height: calc(100vh - 64px);
+    height: calc(100vh - 64px - ${GEOR_HEADER_HEIGHT});
     background-color: ${theme.colorBgLayout};
     padding: ${theme.padding}px;
   `}

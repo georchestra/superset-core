@@ -21,7 +21,7 @@ import { t } from '@apache-superset/core/translation';
 import { FeatureFlag, isDefined, isFeatureEnabled } from '@superset-ui/core';
 import { styled, useTheme } from '@apache-superset/core/theme';
 import { getUrlParam } from 'src/utils/urlUtils';
-import { FilterPlugins, URL_PARAMS } from 'src/constants';
+import { FilterPlugins, GEOR_HEADER_HEIGHT, URL_PARAMS } from 'src/constants';
 import { Link, useHistory } from 'react-router-dom';
 import {
   AsyncSelect,
@@ -84,7 +84,7 @@ const StyledContainer = styled.div`
     justify-content: space-between;
     width: 100%;
     max-width: ${MAX_ADVISABLE_VIZ_GALLERY_WIDTH}px;
-    max-height: calc(100vh - ${ESTIMATED_NAV_HEIGHT}px);
+    max-height: calc(100vh - ${ESTIMATED_NAV_HEIGHT}px - ${GEOR_HEADER_HEIGHT});
     border-radius: ${theme.borderRadius}px;
     background-color: ${theme.colorBgContainer};
     margin-left: auto;
@@ -118,7 +118,9 @@ const StyledContainer = styled.div`
       border: 1px solid ${theme.colorBorder};
       border-radius: ${theme.borderRadius}px;
       margin: ${theme.marginXXS}px 0px;
-      max-height: calc(100vh - ${ELEMENTS_EXCEPT_VIZ_GALLERY}px);
+      max-height: calc(
+        100vh - ${ELEMENTS_EXCEPT_VIZ_GALLERY}px - ${GEOR_HEADER_HEIGHT}
+      );
       flex: 1;
     }
 
