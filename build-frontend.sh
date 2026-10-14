@@ -3,10 +3,10 @@
 # Disable SCARF analytics reporting
 export SCARF_ANALYTICS=false
 
-# Use Node 20 (code "iron")
-source ~/.nvm/nvm.sh
-nvm install lts/iron
-nvm use lts/iron
+# Use Node 22 (code "jod")
+#source ~/.nvm/nvm.sh
+nvm install lts/jod
+nvm use lts/jod
 
 # Install dependencies from `package-lock.json`
 npm --prefix superset-frontend prune
