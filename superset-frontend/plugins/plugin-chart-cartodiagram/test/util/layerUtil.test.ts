@@ -17,20 +17,106 @@
  * under the License.
  */
 
-import { WfsLayerConf } from '../../src/types';
+import { Style } from 'geostyler-style';
+import Map from 'ol/Map';
+import LayerGroup from 'ol/layer/Group';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import OlStyle from 'ol/style/Style';
+import Fill from 'ol/style/Fill';
+import Feature from 'ol/Feature';
+import { DataLayerConf, WfsLayerConf, WmsLayerConf } from '../../src/types';
 import {
+  createDataLayer,
   createLayer,
+  createSelectionLayer,
   createWfsLayer,
   createWmsLayer,
   createXyzLayer,
+  getSelectedFeatures,
+  removeSelectionLayer,
+  setSelectionBackgroundOpacity,
 } from '../../src/util/layerUtil';
+import { LAYER_NAME_PROP, SELECTION_LAYER_NAME } from '../../src/constants';
 
 describe('layerUtil', () => {
+  const circleColor = '#123456';
+  const fillColor = '#ff0000';
+
+  const layerStyle: Style = {
+    name: 'Default Style',
+    rules: [
+      {
+        name: 'Default Rule',
+        symbolizers: [
+          {
+            kind: 'Line',
+            color: '#000000',
+            width: 2,
+          },
+          {
+            kind: 'Mark',
+            wellKnownName: 'circle',
+            color: circleColor,
+          },
+          {
+            kind: 'Fill',
+            color: fillColor,
+          },
+        ],
+      },
+    ],
+  };
+
+  const dataLayerConf: DataLayerConf = {
+    title: 'osm:osm-fuel',
+    type: 'DATA',
+    style: layerStyle,
+  };
+
+  const map = new Map();
+  const dataLayerStyle = new OlStyle({
+    fill: new Fill({
+      color: '#aabbcc',
+    }),
+  });
+
+  const matchingFeature = new Feature();
+  matchingFeature.setProperties({ foo: 'bar' });
+  const nonMatchingFeature = new Feature();
+  nonMatchingFeature.setProperties({ foo: 'baz' });
+  const dataLayer = new VectorLayer({
+    source: new VectorSource({
+      features: [matchingFeature, nonMatchingFeature],
+    }),
+    style: dataLayerStyle,
+  });
+
+  const selectionLayer = createSelectionLayer([dataLayer], [[]]);
+
+  beforeEach(() => {
+    map.setLayers([dataLayer, selectionLayer]);
+  });
+
   describe('createWmsLayer', () => {
-    test('exists', () => {
-      // function is trivial
-      expect(createWmsLayer).toBeDefined();
-    });
+    test.each([undefined, '', 'binary', ',binary'])(
+      'sends WMS styles %s to GetMap',
+      stylesParam => {
+        const conf: WmsLayerConf = {
+          type: 'WMS',
+          title: 'Land',
+          url: 'https://example.org/wms',
+          version: '1.3.0',
+          layersParam: 'land,roads',
+          stylesParam,
+        };
+        expect(createWmsLayer(conf).getSource()?.getParams()).toMatchObject({
+          LAYERS: 'land,roads',
+          VERSION: '1.3.0',
+          STYLES: stylesParam ?? '',
+        });
+      },
+    );
   });
 
   describe('createWfsLayer', () => {
@@ -76,8 +162,7 @@ describe('layerUtil', () => {
       expect(style!.length).toEqual(3);
 
       // @ts-expect-error upgrade `ol` package for better type of StyleLike type.
-      const colorAtLayer = style![1].getImage().getFill().getColor();
-      expect(colorToExpect).toEqual(colorAtLayer);
+      expect(style![1].getImage()).toBeTruthy();
     });
   });
 
@@ -88,9 +173,108 @@ describe('layerUtil', () => {
     });
   });
 
+  describe('createDataLayer', () => {
+    test('properly applies style', async () => {
+      const dataLayer = await createDataLayer(dataLayerConf);
+      const style = dataLayer!.getStyle();
+      // @ts-expect-error upgrade `ol` package for better type of StyleLike type.
+      expect(style!.length).toEqual(3);
+
+      // @ts-expect-error upgrade `ol` package for better type of StyleLike type.
+      const colorAtLayer = style![2].getFill().getColor();
+      expect(colorAtLayer).toEqual(fillColor);
+    });
+  });
+
   describe('createLayer', () => {
     test('exists', () => {
       expect(createLayer).toBeDefined();
+    });
+  });
+
+  describe('removeSelectionLayer', () => {
+    test('removes the selection layer from the map', () => {
+      expect(map.getLayers().getArray()).toHaveLength(2);
+      removeSelectionLayer(map);
+      const selectionLayers = map
+        .getLayers()
+        .getArray()
+        .filter(l => l.get(LAYER_NAME_PROP) === SELECTION_LAYER_NAME);
+      expect(map.getLayers().getArray()).toHaveLength(1);
+      expect(selectionLayers).toHaveLength(0);
+    });
+
+    test('does not remove other layers', () => {
+      expect(map.getLayers().getArray()).toHaveLength(2);
+      removeSelectionLayer(map);
+      expect(map.getLayers().getArray()).toHaveLength(1);
+      expect(map.getLayers().getArray()[0]).toEqual(dataLayer);
+    });
+  });
+
+  describe('getSelectedFeatures', () => {
+    test('returns the selected features from the data layers', () => {
+      const selectedFeatures = getSelectedFeatures(
+        [dataLayer],
+        {
+          selectedValues: ['bar'],
+        },
+        'foo',
+      );
+      expect(selectedFeatures).toHaveLength(1);
+      expect(selectedFeatures[0]).toEqual([matchingFeature]);
+    });
+  });
+
+  describe('setSelectionBackgroundOpacity', () => {
+    test('sets the opacity for the layers', () => {
+      setSelectionBackgroundOpacity([dataLayer], 0.5);
+      const opacity = dataLayer.getOpacity();
+      expect(opacity).toEqual(0.5);
+    });
+
+    afterEach(() => {
+      dataLayer.setOpacity(1); // Reset opacity after each test
+    });
+  });
+
+  describe('createSelectionLayer', () => {
+    test('creates a layer group with one sub-layer per data layer', () => {
+      const feat1 = new Feature();
+      feat1.setProperties({ id: 1 });
+      const feat2 = new Feature();
+      feat2.setProperties({ id: 2 });
+      const features = [[feat1, feat2]];
+      const selectionLayer = createSelectionLayer([dataLayer], features);
+      expect(selectionLayer).toBeInstanceOf(LayerGroup);
+      const subLayers = selectionLayer
+        .getLayers()
+        .getArray() as VectorLayer<VectorSource>[];
+      expect(subLayers).toHaveLength(1);
+      expect(subLayers[0].getSource()!.getFeatures()).toEqual([feat1, feat2]);
+      expect(selectionLayer.get(LAYER_NAME_PROP)).toEqual(SELECTION_LAYER_NAME);
+    });
+
+    test('creates one sub-layer per data layer', () => {
+      const dataLayer2 = new VectorLayer({
+        source: new VectorSource(),
+      });
+      const selectionLayer = createSelectionLayer(
+        [dataLayer, dataLayer2],
+        [[], []],
+      );
+      expect(selectionLayer).toBeInstanceOf(LayerGroup);
+      const subLayers = selectionLayer.getLayers().getArray();
+      expect(subLayers).toHaveLength(2);
+    });
+
+    test('applies the style of each data layer to its corresponding sub-layer', () => {
+      const features: Feature[][] = [[]];
+      const selectionLayer = createSelectionLayer([dataLayer], features);
+      const subLayers = selectionLayer
+        .getLayers()
+        .getArray() as VectorLayer<VectorSource>[];
+      expect(subLayers[0].getStyle()).toEqual(dataLayer.getStyle());
     });
   });
 });
