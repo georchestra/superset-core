@@ -1,0 +1,955 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+import { DataRecord } from '@superset-ui/core';
+import { useEffect, useMemo, useState } from 'react';
+
+import { Feature, FeatureCollection } from 'geojson';
+import { debounce, xor, uniq } from 'lodash';
+import Point from 'ol/geom/Point';
+import { View, Feature as OlFeature } from 'ol';
+import BaseEvent from 'ol/events/Event';
+import { unByKey } from 'ol/Observable';
+import Draw, { DrawEvent } from 'ol/interaction/Draw';
+import OlPolygon from 'ol/geom/Polygon';
+import { toLonLat, transformExtent } from 'ol/proj';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
+import {
+  dataRecordsToOlFeatures,
+  fitMapToFeatures,
+  fitMapToData,
+} from '../../util/mapUtil';
+import {
+  createMaskLayer,
+  createLayer,
+  createPresentationLayer,
+  createSelectionLayer,
+  getSelectedFeatures,
+  removeManagedLayer,
+  removeSelectionLayer,
+  setSelectionBackgroundOpacity,
+} from '../../util/layerUtil';
+import { getFeaturesInLasso, LASSO_DRAW_STYLE } from '../../util/lassoUtil';
+import { LayerConf, MapMaxExtentConfigs, MapViewConfigs } from '../../types';
+import { OlChartMapProps } from '../types';
+import { isDataLayerConf } from '../../typeguards';
+import { StyledFeatureTooltip } from './FeatureTooltip';
+import {
+  FULL_OPACITY,
+  GeometryFormat,
+  MASK_LAYER_NAME,
+  PRESENTATION_LAYER_NAME,
+  SELECTION_BACKGROUND_OPACITY,
+} from '../../constants';
+import { Legend } from './Legend';
+import { SelectionControls } from './SelectionControls';
+import {
+  areFeaturesPolygonal,
+  createMaskFeature,
+  getMapExtentPadding,
+  mergePolygonFeatures,
+} from '../../util/geometryUtil';
+
+export const OlChartMap = (props: OlChartMapProps) => {
+  const {
+    height,
+    width,
+    mapId,
+    data,
+    emitCrossFilters,
+    filterState,
+    columns,
+    crossFilterColumn,
+    geomColumn,
+    geomFormat,
+    olMap,
+    layerConfigs,
+    mapMaxExtent,
+    mapView,
+    maxZoom,
+    minZoom,
+    mapExtentPadding,
+    setControlValue,
+    setDataMask,
+    timeColumn,
+    timeFilter,
+    tooltipTemplate,
+    showLegend,
+    showTooltip,
+    showAreaMask,
+    hideData,
+    areaMaskOpacity,
+    areaMaskColor,
+    areaBoundaryStrokeWidth,
+    areaBoundaryStrokeColor,
+  } = props;
+
+  const [currentMapView, setCurrentMapView] = useState<MapViewConfigs>(mapView);
+  const [currentDataLayers, setCurrentDataLayers] =
+    useState<VectorLayer<VectorSource>[]>();
+  const [currentMapMaxExtent, setCurrentMapMaxExtent] =
+    useState<MapMaxExtentConfigs>(mapMaxExtent);
+  const [lassoActive, setLassoActive] = useState(false);
+
+  // The processed data, either list of data records or a feature collection,
+  // depending on geomFormat. Use this throughout the component instead of data.
+  const processedData: DataRecord[] | FeatureCollection = useMemo(() => {
+    if (geomFormat === GeometryFormat.GEOJSON) {
+      const features: Feature[] = [];
+      data.forEach(item => {
+        const parsedGeom = JSON.parse(item[geomColumn] as string);
+        features.push({
+          type: 'Feature',
+          geometry: parsedGeom,
+          properties: { ...item },
+        });
+      });
+      return {
+        type: 'FeatureCollection',
+        features,
+      };
+    }
+    return data;
+  }, [data, geomColumn, geomFormat]);
+
+  /**
+   * Use OL features for WKB/WKT-specific flows that need native OpenLayers
+   * features repeatedly, such as extent fitting and vector source updates.
+   * Keep using processedData for filtering and GeoJSON-backed logic.
+   */
+  const dataFeatures = useMemo(() => {
+    if (
+      geomFormat === GeometryFormat.WKB ||
+      geomFormat === GeometryFormat.WKT
+    ) {
+      return dataRecordsToOlFeatures(
+        processedData as DataRecord[],
+        geomColumn,
+        geomFormat,
+      ) as OlFeature[];
+    }
+    return undefined;
+  }, [processedData, geomColumn, geomFormat]);
+
+  /**
+   * Add map to correct DOM element.
+   */
+  useEffect(() => {
+    olMap.setTarget(mapId);
+  }, [olMap, mapId]);
+
+  /**
+   * Update map size if size of parent container changes.
+   */
+  useEffect(() => {
+    olMap.updateSize();
+  }, [olMap, width, height]);
+
+  /**
+   * The prop mapView will always be created on the fly,
+   * therefore the shallow comparison of the effect hooks will
+   * always trigger. In this hook, we compare only those props
+   * that might be changed from outside of the component, i.e the
+   * fixed properties and the mode. Only if these values differ will
+   * we set the state to the new object. All other effect hooks that
+   * depend on mapView should now depend on currentMapView instead.
+   */
+  useEffect(() => {
+    setCurrentMapView(oldCurrentMapView => {
+      const sameFixedZoom = oldCurrentMapView.fixedZoom === mapView.fixedZoom;
+      const sameFixedLon =
+        oldCurrentMapView.fixedLongitude === mapView.fixedLongitude;
+      const sameFixedLat =
+        oldCurrentMapView.fixedLatitude === mapView.fixedLatitude;
+      const sameMode = oldCurrentMapView.mode === mapView.mode;
+      if (sameFixedZoom && sameFixedLon && sameFixedLat && sameMode) {
+        return oldCurrentMapView;
+      }
+      return mapView;
+    });
+  }, [mapView]);
+
+  /**
+   * The prop mapMaxExtent will always be created on the fly,
+   * therefore the shallow comparison of the effect hooks will
+   * always trigger. In this hook, we compare only those props
+   * that might be changed from outside of the component, i.e the
+   * fixed properties and the mode. Only if these values differ will
+   * we set the state to the new object. All other effect hooks that
+   * depend on mapView should now depend on currentMapMaxExtent instead.
+   */
+  useEffect(() => {
+    setCurrentMapMaxExtent(oldCurrentMapExtentView => {
+      const sameFixedMaxX =
+        oldCurrentMapExtentView.fixedMaxX === mapMaxExtent.fixedMaxX;
+      const sameFixedMaxY =
+        oldCurrentMapExtentView.fixedMaxY === mapMaxExtent.fixedMaxY;
+      const sameFixedMinX =
+        oldCurrentMapExtentView.fixedMinX === mapMaxExtent.fixedMinX;
+      const sameFixedMinY =
+        oldCurrentMapExtentView.fixedMinY === mapMaxExtent.fixedMinY;
+      const sameMode =
+        oldCurrentMapExtentView.extentMode === mapMaxExtent.extentMode;
+      if (
+        sameFixedMaxX &&
+        sameFixedMaxY &&
+        sameFixedMinX &&
+        sameFixedMinY &&
+        sameMode
+      ) {
+        return oldCurrentMapExtentView;
+      }
+      return mapMaxExtent;
+    });
+  }, [mapMaxExtent]);
+
+  /**
+   * Set initial map extent.
+   */
+  useEffect(() => {
+    const view = olMap.getView();
+    const { mode, fixedLatitude, fixedLongitude, fixedZoom } = mapView;
+    const { extentMode, fixedMaxX, fixedMaxY, fixedMinX, fixedMinY } =
+      mapMaxExtent;
+
+    switch (mode) {
+      case 'CUSTOM': {
+        const fixedCenter = new Point([fixedLongitude, fixedLatitude]);
+        fixedCenter.transform('EPSG:4326', 'EPSG:3857'); // in-place
+
+        view.setZoom(fixedZoom);
+        view.setCenter(fixedCenter.getCoordinates());
+        break;
+      }
+      default: {
+        if (
+          geomFormat === GeometryFormat.WKB ||
+          geomFormat === GeometryFormat.WKT
+        ) {
+          fitMapToFeatures(
+            olMap,
+            dataFeatures || [],
+            getMapExtentPadding(mapExtentPadding),
+          );
+        } else {
+          fitMapToData(
+            olMap,
+            processedData as FeatureCollection,
+            getMapExtentPadding(mapExtentPadding),
+          );
+        }
+
+        const zoom = view.getZoom();
+        const centerCoord = view.getCenter();
+        if (!centerCoord) break;
+
+        const centerPoint = new Point(centerCoord);
+        centerPoint.transform('EPSG:3857', 'EPSG:4326'); // in-place
+
+        const [longitude, latitude] = centerPoint.getCoordinates();
+
+        setControlValue('map_view', {
+          ...mapView,
+          zoom,
+          longitude,
+          latitude,
+          fixedLatitude: latitude,
+          fixedLongitude: longitude,
+          fixedZoom: zoom,
+        });
+
+        break;
+      }
+    }
+
+    switch (extentMode) {
+      case 'CUSTOM': {
+        if (
+          fixedMaxX === undefined ||
+          fixedMaxY === undefined ||
+          fixedMinX === undefined ||
+          fixedMinY === undefined
+        ) {
+          break;
+        }
+        const [minx, miny, maxx, maxy] = transformExtent(
+          [fixedMinX, fixedMinY, fixedMaxX, fixedMaxY],
+          'EPSG:4326',
+          'EPSG:3857',
+        );
+
+        olMap.setView(
+          new View({
+            center: view.getCenter(),
+            zoom: view.getZoom(),
+            extent: [minx, miny, maxx, maxy],
+            maxZoom: view.getMaxZoom(),
+            minZoom: view.getMinZoom(),
+          }),
+        );
+        break;
+      }
+      default: {
+        const newView = new View({
+          center: view.getCenter(),
+          zoom: view.getZoom(),
+          maxZoom: view.getMaxZoom(),
+          minZoom: view.getMinZoom(),
+        });
+        olMap.setView(newView);
+
+        const [minx, miny, maxx, maxy] = newView.calculateExtent(
+          olMap.getSize(),
+        );
+
+        const [minX, minY, maxX, maxY] = transformExtent(
+          [minx, miny, maxx, maxy],
+          'EPSG:3857',
+          'EPSG:4326',
+        );
+
+        setControlValue('map_max_extent', {
+          ...mapMaxExtent,
+          minX,
+          maxX,
+          minY,
+          maxY,
+        });
+
+        break;
+      }
+    }
+  }, []);
+
+  /* This useEffect hook runs whenever olMap, currentDataFeatureCollection,
+   * mapExtentPadding or currentMapView.mode changes
+   * If the currentMapView.mode is 'FIT_DATA', it adjusts the map (olMap) to fit
+   * the current data
+   */
+  useEffect(() => {
+    if (currentMapView.mode === 'FIT_DATA') {
+      if (
+        geomFormat === GeometryFormat.WKB ||
+        geomFormat === GeometryFormat.WKT
+      ) {
+        fitMapToFeatures(
+          olMap,
+          dataFeatures || [],
+          getMapExtentPadding(mapExtentPadding),
+        );
+      } else {
+        fitMapToData(
+          olMap,
+          processedData as FeatureCollection,
+          getMapExtentPadding(mapExtentPadding),
+        );
+      }
+    }
+  }, [
+    olMap,
+    data,
+    currentMapView.mode,
+    geomFormat,
+    geomColumn,
+    processedData,
+    dataFeatures,
+    mapExtentPadding,
+  ]);
+
+  useEffect(() => {
+    const view = olMap.getView();
+    view.setMinZoom(minZoom);
+  }, [minZoom, olMap]);
+
+  useEffect(() => {
+    const view = olMap.getView();
+    view.setMaxZoom(maxZoom);
+  }, [maxZoom, olMap]);
+
+  const filteredData = useMemo(() => {
+    if (!timeColumn || timeFilter === undefined) {
+      return processedData;
+    }
+    let filteredRecords;
+    if (
+      geomFormat === GeometryFormat.WKB ||
+      geomFormat === GeometryFormat.WKT
+    ) {
+      filteredRecords = (processedData as DataRecord[]).filter(
+        f => f[timeColumn] === timeFilter,
+      );
+    } else {
+      filteredRecords = {
+        type: 'FeatureCollection',
+        features: (processedData as FeatureCollection).features.filter(
+          f => f.properties?.[timeColumn] === timeFilter,
+        ),
+      };
+    }
+    return filteredRecords;
+  }, [processedData, timeColumn, timeFilter, geomFormat]);
+
+  const filteredFeatures = useMemo(() => {
+    if (
+      geomFormat === GeometryFormat.WKB ||
+      geomFormat === GeometryFormat.WKT
+    ) {
+      if (filteredData === processedData) {
+        return dataFeatures;
+      }
+      return dataRecordsToOlFeatures(
+        filteredData as DataRecord[],
+        geomColumn,
+        geomFormat,
+      ) as OlFeature[];
+    }
+    return undefined;
+  }, [filteredData, processedData, dataFeatures, geomColumn, geomFormat]);
+
+  const visibleFeatures = useMemo(() => {
+    if (
+      geomFormat === GeometryFormat.WKB ||
+      geomFormat === GeometryFormat.WKT
+    ) {
+      return (filteredFeatures || []) as OlFeature[];
+    }
+    return new GeoJSON().readFeatures(filteredData, {
+      featureProjection: 'EPSG:3857',
+    }) as OlFeature[];
+  }, [filteredData, filteredFeatures, geomFormat]);
+
+  const visibleFeaturesArePolygonal = useMemo(
+    () => areFeaturesPolygonal(visibleFeatures),
+    [visibleFeatures],
+  );
+
+  const mergedVisibleFeatures = useMemo(() => {
+    if (!showAreaMask || !visibleFeaturesArePolygonal) {
+      return undefined;
+    }
+    return mergePolygonFeatures(visibleFeatures) as OlFeature[];
+  }, [showAreaMask, visibleFeatures, visibleFeaturesArePolygonal]);
+
+  const showsAreaBoundary =
+    showAreaMask &&
+    visibleFeaturesArePolygonal &&
+    Boolean(mergedVisibleFeatures?.length);
+  const hidesDataLayer = showsAreaBoundary && hideData;
+
+  /**
+   * Update layers
+   */
+  useEffect(() => {
+    olMap.getLayers().clear();
+
+    const addLayers = async (configs: LayerConf[]) => {
+      // Loop through layer configs, create layers and add them to map.
+      // The first layer in the list will be the upmost layer on the map.
+      const createdLayersPromises = configs.map(config => createLayer(config));
+      const createdLayers = await Promise.allSettled(createdLayersPromises);
+      const createdDataLayers: VectorLayer<VectorSource>[] = [];
+      createdLayers.forEach((createdLayer, idx) => {
+        if (createdLayer.status === 'fulfilled' && createdLayer.value) {
+          olMap.getLayers().insertAt(0, createdLayer.value);
+          if (isDataLayerConf(configs[idx])) {
+            createdDataLayers.push(
+              createdLayer.value as VectorLayer<VectorSource>,
+            );
+          }
+        } else {
+          console.warn(`Layer could not be created: ${configs[idx]}`);
+        }
+      });
+      setCurrentDataLayers(createdDataLayers);
+    };
+
+    const layerConfs = layerConfigs || [];
+    addLayers(layerConfs);
+  }, [olMap, layerConfigs]);
+
+  /**
+   * Update data layers
+   */
+  useEffect(() => {
+    currentDataLayers?.forEach(dataLayer => {
+      const source = dataLayer.getSource();
+      source?.clear();
+      source?.addFeatures(visibleFeatures);
+    });
+  }, [currentDataLayers, visibleFeatures]);
+
+  useEffect(() => {
+    removeManagedLayer(olMap, PRESENTATION_LAYER_NAME);
+
+    if (
+      !currentDataLayers ||
+      currentDataLayers.length === 0 ||
+      !showsAreaBoundary ||
+      !mergedVisibleFeatures
+    ) {
+      return undefined;
+    }
+
+    const presentationLayer = createPresentationLayer(
+      mergedVisibleFeatures,
+      areaBoundaryStrokeColor,
+      areaBoundaryStrokeWidth,
+    );
+    olMap.addLayer(presentationLayer);
+
+    return () => {
+      removeManagedLayer(olMap, PRESENTATION_LAYER_NAME);
+    };
+  }, [
+    currentDataLayers,
+    areaBoundaryStrokeColor,
+    areaBoundaryStrokeWidth,
+    mergedVisibleFeatures,
+    olMap,
+    showsAreaBoundary,
+  ]);
+
+  useEffect(() => {
+    removeManagedLayer(olMap, MASK_LAYER_NAME);
+
+    if (!showAreaMask || !visibleFeaturesArePolygonal) {
+      return undefined;
+    }
+
+    const focusFeatures =
+      showsAreaBoundary && mergedVisibleFeatures
+        ? mergedVisibleFeatures
+        : visibleFeatures;
+    const projectionExtent = olMap.getView().getProjection().getExtent();
+    if (!projectionExtent) {
+      return undefined;
+    }
+
+    const maskFeature = createMaskFeature(focusFeatures, projectionExtent);
+    if (!maskFeature) {
+      return undefined;
+    }
+
+    const maskLayer = createMaskLayer(
+      maskFeature,
+      areaMaskColor,
+      areaMaskOpacity / 100,
+    );
+    olMap.addLayer(maskLayer);
+
+    return () => {
+      removeManagedLayer(olMap, MASK_LAYER_NAME);
+    };
+  }, [
+    mergedVisibleFeatures,
+    areaMaskOpacity,
+    areaMaskColor,
+    olMap,
+    showAreaMask,
+    showsAreaBoundary,
+    visibleFeatures,
+    visibleFeaturesArePolygonal,
+  ]);
+
+  useEffect(() => {
+    removeSelectionLayer(olMap);
+
+    if (!currentDataLayers || currentDataLayers.length === 0) {
+      return;
+    }
+
+    const selectedFeatures = getSelectedFeatures(
+      currentDataLayers,
+      filterState,
+      crossFilterColumn,
+    );
+    const baseOpacity = hidesDataLayer ? 0.01 : FULL_OPACITY;
+
+    if (filterState.value !== null && filterState.value !== undefined) {
+      if (!hidesDataLayer) {
+        const selectionLayer = createSelectionLayer(
+          currentDataLayers,
+          selectedFeatures,
+        );
+        olMap.addLayer(selectionLayer);
+      }
+      setSelectionBackgroundOpacity(
+        currentDataLayers,
+        hidesDataLayer ? 0.01 : SELECTION_BACKGROUND_OPACITY,
+      );
+    } else {
+      setSelectionBackgroundOpacity(currentDataLayers, baseOpacity);
+    }
+  }, [
+    crossFilterColumn,
+    currentDataLayers,
+    filterState,
+    hidesDataLayer,
+    olMap,
+  ]);
+
+  useEffect(() => {
+    const { extentMode, fixedMaxX, fixedMaxY, fixedMinX, fixedMinY } =
+      currentMapMaxExtent;
+    const view = olMap.getView();
+    const center = view.getCenter();
+    const zoom = view.getZoom();
+    let extent;
+
+    if (
+      extentMode === 'CUSTOM' &&
+      fixedMaxX !== undefined &&
+      fixedMaxY !== undefined &&
+      fixedMinX !== undefined &&
+      fixedMinY !== undefined
+    ) {
+      extent = transformExtent(
+        [fixedMinX, fixedMinY, fixedMaxX, fixedMaxY],
+        'EPSG:4326',
+        'EPSG:3857',
+      );
+    }
+
+    olMap.setView(
+      new View({
+        center,
+        zoom,
+        extent,
+        maxZoom: view.getMaxZoom(),
+        minZoom: view.getMinZoom(),
+      }),
+    );
+  }, [olMap, currentMapMaxExtent]);
+
+  /**
+   * Create listener on map movement
+   */
+  useEffect(() => {
+    const view = olMap.getView();
+
+    const onViewChange = (event: BaseEvent) => {
+      const targetView: View = event.target as unknown as View;
+
+      const center = targetView.getCenter();
+      const zoom = targetView.getZoom();
+
+      const [minx, miny, maxx, maxy] = targetView.calculateExtent(
+        olMap.getSize(),
+      );
+      const [minX, minY, maxX, maxY] = transformExtent(
+        [minx, miny, maxx, maxy],
+        'EPSG:3857',
+        'EPSG:4326',
+      );
+
+      if (center) {
+        const [longitude, latitude] = toLonLat(center);
+
+        setControlValue('map_view', {
+          ...currentMapView,
+          zoom,
+          longitude,
+          latitude,
+        });
+      }
+
+      setControlValue('map_max_extent', {
+        ...currentMapMaxExtent,
+        maxX,
+        maxY,
+        minX,
+        minY,
+      });
+    };
+
+    const listenerKey = view.on(
+      'change',
+      debounce((event: BaseEvent) => {
+        onViewChange(event);
+      }, 200),
+    );
+
+    // this is executed before the next render,
+    // here we cleanup the listener
+    return () => {
+      unByKey(listenerKey);
+    };
+  }, [olMap, setControlValue, currentMapView, currentMapMaxExtent]);
+
+  useEffect(() => {
+    if (currentMapView.mode === 'FIT_DATA') {
+      // Get first data layer to determine its extent.
+      // A data layer is a vector layer without URL.
+      const layers = olMap.getLayers();
+      const dataLayer = layers.getArray().find(layer => {
+        if (!(layer instanceof VectorLayer)) {
+          return false;
+        }
+        const layerSource = layer.getSource();
+        if (!(layerSource instanceof VectorSource)) {
+          return false;
+        }
+        return !layerSource.getUrl();
+      });
+
+      if (!dataLayer) {
+        return;
+      }
+      const extent = dataLayer.getExtent();
+
+      if (!extent) {
+        return;
+      }
+      const view = olMap.getView();
+      const padding = getMapExtentPadding(mapExtentPadding);
+      view.fit(extent, { padding });
+    }
+  }, [olMap, currentMapView.mode, mapExtentPadding]);
+
+  /**
+   * Freehand lasso selection tool.
+   *
+   * When lassoActive is true, a Draw interaction is added to the map. After
+   * the user finishes drawing, all data-layer features that intersect the
+   * drawn polygon are collected and used to activate (or narrow) the
+   * cross-filter. The interaction is removed as soon as drawing completes
+   * (one-shot behaviour).
+   */
+  useEffect(() => {
+    if (!lassoActive || !emitCrossFilters) {
+      return undefined;
+    }
+
+    const draw = new Draw({
+      type: 'Polygon',
+      freehand: true,
+      style: LASSO_DRAW_STYLE,
+    });
+
+    draw.on('drawend', (evt: DrawEvent) => {
+      const lassoPolygon = evt.feature.getGeometry() as OlPolygon;
+      if (!lassoPolygon || !currentDataLayers) {
+        setLassoActive(false);
+        return;
+      }
+
+      const featuresInLasso = getFeaturesInLasso(
+        currentDataLayers,
+        lassoPolygon,
+      );
+
+      const vals = uniq(
+        featuresInLasso
+          .map(f => f.get(crossFilterColumn))
+          .filter(val => val !== undefined && val !== null),
+      );
+
+      // With an existing selection: do nothing if the lasso missed every
+      // already-selected feature (prevents accidental deselection).
+      if (!vals.length) {
+        setLassoActive(false);
+        return;
+      }
+
+      if (vals.length) {
+        setDataMask({
+          extraFormData: {
+            filters: [{ col: crossFilterColumn, op: 'IN', val: vals }],
+          },
+          filterState: {
+            label: vals.join(', '),
+            value: [vals],
+            selectedValues: vals,
+          },
+        });
+      }
+
+      setLassoActive(false);
+    });
+
+    olMap.addInteraction(draw);
+
+    return () => {
+      olMap.removeInteraction(draw);
+    };
+  }, [
+    olMap,
+    lassoActive,
+    emitCrossFilters,
+    currentDataLayers,
+    crossFilterColumn,
+    setDataMask,
+  ]);
+
+  useEffect(() => {
+    const evtKey = olMap.on('pointermove', evt => {
+      // While lasso mode is active, let the Draw interaction manage the cursor.
+      if (lassoActive) {
+        return;
+      }
+
+      const pixel = olMap.getEventPixel(evt.originalEvent);
+
+      const hit = olMap.forEachFeatureAtPixel(
+        pixel,
+        // stop iteration after first feature
+        () => true,
+        {
+          layerFilter: layer =>
+            currentDataLayers
+              ? currentDataLayers.some(dataLayer => dataLayer === layer)
+              : false,
+        },
+      );
+
+      if (evt.originalEvent.target instanceof HTMLElement) {
+        if (hit) {
+          evt.originalEvent.target.style.cursor = 'pointer';
+        } else {
+          evt.originalEvent.target.style.cursor = 'default';
+        }
+      }
+    });
+
+    return () => {
+      unByKey(evtKey);
+    };
+  }, [olMap, currentDataLayers, lassoActive]);
+
+  useEffect(() => {
+    if (!emitCrossFilters) {
+      return undefined;
+    }
+
+    const evtKey = olMap.on('singleclick', evt => {
+      // The Draw interaction handles pointer events during lasso drawing;
+      // suppress click-based selection while lasso mode is active.
+      if (lassoActive) {
+        return;
+      }
+
+      const pixel = olMap.getEventPixel(evt.originalEvent);
+      const clickedFeatures: OlFeature[] = [];
+
+      olMap.forEachFeatureAtPixel(
+        pixel,
+        feat => {
+          clickedFeatures.push(feat as OlFeature);
+        },
+        {
+          layerFilter: layer =>
+            currentDataLayers
+              ? currentDataLayers.some(dataLayer => dataLayer === layer)
+              : false,
+        },
+      );
+
+      if (!clickedFeatures.length) {
+        return;
+      }
+
+      const vals = uniq(
+        clickedFeatures
+          .map(f => f.get(crossFilterColumn))
+          .filter(val => val !== undefined && val !== null),
+      );
+
+      if (!vals.length) {
+        return;
+      }
+
+      // No active selection: standard XOR toggle (click same feature → clear).
+      const resetFilter = !xor(filterState.selectedValues || [], vals).length;
+
+      setDataMask({
+        extraFormData: {
+          filters: resetFilter
+            ? []
+            : [
+                {
+                  col: crossFilterColumn,
+                  op: 'IN',
+                  val: vals,
+                },
+              ],
+        },
+        filterState: {
+          label: resetFilter ? null : vals.join(', '),
+          value: resetFilter ? null : [vals],
+          selectedValues: resetFilter ? null : vals,
+        },
+      });
+    });
+
+    return () => {
+      unByKey(evtKey);
+    };
+  }, [
+    olMap,
+    currentDataLayers,
+    lassoActive,
+    setDataMask,
+    crossFilterColumn,
+    emitCrossFilters,
+    filterState,
+  ]);
+
+  return (
+    <div
+      id={mapId}
+      style={{
+        height: `${height}px`,
+        width: `${width}px`,
+      }}
+    >
+      {showTooltip && (
+        <StyledFeatureTooltip
+          olMap={olMap}
+          dataLayers={currentDataLayers}
+          tooltipTemplate={tooltipTemplate}
+          geomColumn={geomColumn}
+          mapId={mapId}
+          columns={columns}
+        />
+      )}
+      {showLegend && <Legend olMap={olMap} layerConfigs={layerConfigs} />}
+      <SelectionControls
+        olMap={olMap}
+        active={lassoActive}
+        disabled={!emitCrossFilters}
+        hasSelection={Boolean(filterState.value)}
+        onToggle={() => setLassoActive(current => !current)}
+        onClear={() => {
+          setLassoActive(false);
+          setDataMask({
+            extraFormData: { filters: [] },
+            filterState: {
+              label: null,
+              value: null,
+              selectedValues: null,
+            },
+          });
+        }}
+      />
+    </div>
+  );
+};
+
+export default OlChartMap;

@@ -41,7 +41,10 @@ import {
   TimePivotChartPlugin,
 } from '@superset-ui/legacy-preset-chart-nvd3';
 import { DeckGLChartPreset } from '@superset-ui/legacy-preset-chart-deckgl';
-import { CartodiagramPlugin } from '@superset-ui/plugin-chart-cartodiagram';
+import {
+  CartodiagramPlugin,
+  ThematicMapPlugin,
+} from '@superset-ui/plugin-chart-cartodiagram';
 import {
   BigNumberChartPlugin,
   BigNumberTotalChartPlugin,
@@ -209,6 +212,7 @@ export default class MainPreset extends Preset {
             },
           ],
         }).configure({ key: VizType.Cartodiagram }),
+        new ThematicMapPlugin().configure({ key: 'thematic_map' }),
         ...experimentalPlugins,
         ...agGridTablePlugin,
       ],
