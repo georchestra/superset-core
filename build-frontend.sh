@@ -4,7 +4,7 @@
 export SCARF_ANALYTICS=false
 
 # Use Node 20 (code "iron")
-source ~/.nvm/nvm.sh
+# Requires you have nvm installed
 nvm install lts/iron
 nvm use lts/iron
 
