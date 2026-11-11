@@ -3329,11 +3329,11 @@ msgstr "Cliquer pour ajouter un contour"
 
 #, fuzzy
 msgid "Click to add new breakpoint"
-msgstr "Cliquer pour éditer le l’étiquette"
+msgstr "Cliquer pour ajouter un nouveau point d'arrêt"
 
 #, fuzzy
 msgid "Click to add new layer"
-msgstr "Cliquer pour éditer le l’étiquette"
+msgstr "Cliquer pour ajouter une nouvelle couche"
 
 msgid "Click to cancel sorting"
 msgstr "Cliquez pour annuler le tri"
@@ -6461,7 +6461,7 @@ msgstr "FEB"
 
 #, fuzzy
 msgid "FIT DATA"
-msgstr "Modifier le jeu de données"
+msgstr "Ajusté aux données"
 
 msgid "FRI"
 msgstr "FRI"
@@ -8079,7 +8079,7 @@ msgstr "Titre du graphique"
 
 #, fuzzy
 msgid "Layer type"
-msgstr "Type de filtre"
+msgstr "Type de couche"
 
 msgid "Layers"
 msgstr "Couches"
@@ -12195,7 +12195,7 @@ msgstr "Compte de service"
 
 #, fuzzy
 msgid "Service version"
-msgstr "Compte de service"
+msgstr "Version du service"
 
 msgid "Set System Dark Theme"
 msgstr "Définir le thème sombre du système"
@@ -13762,9 +13762,9 @@ msgid ""
 "the extent so that all data points are included in the viewport. CUSTOM "
 "allows users to define the extent manually."
 msgstr ""
-"L'étendue de la carte au démarrage de l'application. FIT DATA définit "
+"L'étendue de la carte au démarrage de l'application. Ajusté aux données définit "
 "automatiquement l'étendue pour inclure tous les points de données dans la"
-" vue. CUSTOM permet aux utilisateurs de définir manuellement l'étendue."
+" vue. Personnalisé permet aux utilisateurs de définir manuellement l'étendue."
 
 msgid "The feature property to use for point labels"
 msgstr ""
@@ -16405,7 +16405,7 @@ msgid "WED"
 msgstr "MER"
 
 msgid "WFS"
-msgstr "WMS"
+msgstr "WFS"
 
 msgid "WMS"
 msgstr "WMS"
