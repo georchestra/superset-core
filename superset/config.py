@@ -2398,6 +2398,69 @@ ENVIRONMENT_TAG_CONFIG = {
     },
 }
 
+# Map projections of the datasources. If not provided, only
+# EPSG:3857 and EPSG:4326 are supported. The projection definitions
+# can be found on https://epsg.io in the Proj.4 section and should
+# be added here in following structure:
+#
+# {'EPSG:Code': 'definition'}
+
+MAP_PROJECTIONS = {
+    'EPSG:2154': (
+        '+proj=lcc +lat_0=46.5 +lon_0=3 +lat_1=49 +lat_2=44 +x_0=700000 +y_0=6600000 '
+        '+ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs'
+    )
+}
+
+# Default layers that will be added to all visualizations of plugin-chart-cartodiagram.
+# For a list of supported types, and configuration details see the README.md
+# of plugin-chart-cartodiagram.
+MAP_DEFAULT_LAYERS = [
+   {
+       "type": "WMS",
+       "version": "1.1.1",
+       "url": "https://osm.geo2france.fr/mapcache/",
+       "layersParam": "grey",
+       "title": "OpenStreetMap",
+       "attribution": "© Map data from <a href=\"openstreetmap.org/copyright\">OpenStreetMap</a>. Service provided by <a href=\"https://www.geo2france.fr\">Geo2France</a>",
+   },
+]
+
+# Configuration for setting fields in the map styling components.
+# Here, it is possible to hide fields that are not relevant for your use case,
+# for example if you don't want to use the graphic stroke and fill options in
+# the LineEditor, you can set their visibility to False here.
+#
+# For details see:
+# https://github.com/geostyler/geostyler/blob/main/src/context/GeoStylerContext/GeoStylerContext.tsx#L36
+MAP_GEOSTYLER_COMPOSITION = {
+    "LineEditor": {
+        "perpendicularOffsetField": {
+            "visibility": False,
+        },
+        "graphicFillField": {
+            "visibility": False,
+        },
+        "graphicStrokeField": {
+            "visibility": False,
+        },
+    },
+    "Editor": {
+        "rasterEditor": {
+            "visibility": False,
+        },
+    },
+    "FillEditor": {
+        "opacityField": {
+            "visibility": False,
+        },
+    },
+    "WellKnownNameEditor": {
+        "opacityField": {
+            "visibility": False,
+        },
+    },
+}
 
 # Extra related query filters make it possible to limit which objects are shown
 # in the UI. For examples, to only show "admin" or users starting with the letter "b" in

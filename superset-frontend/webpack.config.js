@@ -490,7 +490,7 @@ const config = {
         },
       },
       {
-        test: /node_modules\/(geostyler-style|geostyler-qgis-parser)\/.*\.js$/,
+        test: /node_modules\/(geostyler|geostyler-style|geostyler-qgis-parser|geostyler-openlayers-parser|geostyler-mapbox-parser|geostyler-sld-parser|geostyler-legend)\/.*\.js$/,
         resolve: {
           fullySpecified: false,
         },
@@ -503,7 +503,58 @@ const config = {
       {
         test: /\.jsx?$/,
         // include source code for plugins, but exclude node_modules and test files within them
-        exclude: [/superset-ui.*\/node_modules\//, /\.test.jsx?$/],
+        exclude: [
+          /superset-ui.*\/node_modules\//,
+          /\.test.jsx?$/,
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/geostyler-openlayers-parser',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/geostyler-legend',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-array',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-dispatch',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-format',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-path',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-scale',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-scale-chromatic',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-selection',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-shape',
+          ),
+          path.resolve(
+            __dirname,
+            './plugins/plugin-chart-cartodiagram/node_modules/d3-transition',
+          ),
+        ],
         include: [
           new RegExp(`${APP_DIR}/(src|.storybook|plugins|packages)`),
           ...['./src', './.storybook', './plugins', './packages'].map(p =>
