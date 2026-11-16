@@ -3329,11 +3329,11 @@ msgstr "Cliquer pour ajouter un contour"
 
 #, fuzzy
 msgid "Click to add new breakpoint"
-msgstr "Cliquer pour éditer le l’étiquette"
+msgstr "Cliquer pour ajouter un nouveau point d'arrêt"
 
 #, fuzzy
 msgid "Click to add new layer"
-msgstr "Cliquer pour éditer le l’étiquette"
+msgstr "Cliquer pour ajouter une nouvelle couche"
 
 msgid "Click to cancel sorting"
 msgstr "Cliquez pour annuler le tri"
@@ -5674,9 +5674,8 @@ msgstr "Épaisseur du bord"
 msgid "Edit"
 msgstr "Modifier"
 
-#, fuzzy, python-format
 msgid "Edit %s in modal"
-msgstr "dans modal"
+msgstr "Ouvrir %s dans une fenêtre"
 
 msgid "Edit CSS template properties"
 msgstr "Modifier les propriétés du modèle CSS"
@@ -6459,9 +6458,8 @@ msgstr "Extrudé"
 msgid "FEB"
 msgstr "FEB"
 
-#, fuzzy
 msgid "FIT DATA"
-msgstr "Modifier le jeu de données"
+msgstr "Ajusté aux données"
 
 msgid "FRI"
 msgstr "FRI"
@@ -7073,7 +7071,7 @@ msgstr "Geohash"
 
 #, fuzzy
 msgid "Geometry Column"
-msgstr "Colonne vide"
+msgstr "Colonne de géométrie"
 
 msgid "Get the last date by the date unit."
 msgstr "Récupérer la dernière date par l'unité de date."
@@ -8079,7 +8077,7 @@ msgstr "Titre du graphique"
 
 #, fuzzy
 msgid "Layer type"
-msgstr "Type de filtre"
+msgstr "Type de couche"
 
 msgid "Layers"
 msgstr "Couches"
@@ -12193,9 +12191,131 @@ msgstr ""
 msgid "Service Account"
 msgstr "Compte de service"
 
-#, fuzzy
+msgid "Show Legend"
+msgstr "Afficher la légende"
+
+msgid "Whether to display the legend"
+msgstr "Ajoute un bouton permettant de voir la légende"
+
+msgid "Show Tooltip"
+msgstr "Afficher l'infobulle"
+
+msgid "Whether to display the tooltip"
+msgstr "Si activé, affiche les attributs de l'élément, au survol"
+
+msgid "Show Area Mask"
+msgstr "Afficher le masque de zone"
+
+msgid "Fade the area outside of the currently displayed polygon perimeter."
+msgstr "Applique un masque autour du polygone en cours."
+
+msgid "Hide Data in Area Mask"
+msgstr "Masquer les données dans le masque de zone"
+
+msgid "Hide the original data when the area mask is displayed."
+msgstr "Masque la données originale lorsque le masque est activé."
+
+msgid "Area Mask Color"
+msgstr "Couleur du masque de zone"
+
+msgid "Fill color used for the area mask overlay."
+msgstr "Couleur de remplissage du masque."
+
+msgid "Area Mask Opacity"
+msgstr "Opacité du masque de zone"
+
+msgid "Opacity of the area mask overlay."
+msgstr "Opacité appliquée sur le masque."
+
+msgid "Area Mask Stroke Width"
+msgstr "Epaisseur du contour du masque"
+
+msgid "Stroke width used for the area mask."
+msgstr "Epaisseur du trait de contour délimitant la zone masquée."
+
+msgid "Area Mask Stroke Color"
+msgstr "Couleur du contour du masque"
+
+msgid "Stroke color used for the area mask."
+msgstr "Couleur du trait de contour délimitant la zone masquée."
+
+msgid "Tooltip Template"
+msgstr "Modèle d'infobulle"
+
+msgid "Allows user to make custom queries to display user-specified data in the tooltip."
+msgstr "Permet à l'utilisateur de réaliser des requêtes spécifiques pour afficher des données personnalisées dans l'infobulle."
+
+msgid "Timeseries Options"
+msgstr "Options pour séries temporelles"
+
+msgid "Show timeslider"
+msgstr "Afficher le curseur temporel"
+
+msgid "Time Column"
+msgstr "Colonne temporelle"
+
+msgid "The name of the time column"
+msgstr "Le nom de la colonne à dimension temporelle"
+
+msgid "Tooltip Format"
+msgstr "Format d'infobulle"
+
+msgid "Format for the tooltip of the timeslider."
+msgstr "Format pour l'infobulle du curseur temporel."
+
+msgid "Date & Time"
+msgstr "Date & heure"
+
+msgid "Geometry Format"
+msgstr "Format de la géométrie"
+
+msgid "The format of the geometry column. GeoJSON columns are expected to use WGS84 coordinates. The EWKB and EWKT formats allow for arbitrary projections, which will be read from the data."
+msgstr "Le format de la colonne de géométrie. Les colonnes GeoJSON doivent utiliser la projection WGS84. Les formats EWKB et EWKT supportent des projections arbitraires, qui seront lues à partir des données."
+
+msgid "Cross-filter column"
+msgstr "Colonne de filtre croisé"
+
+msgid "The attribute being used when performing cross-filtering."
+msgstr "Nom de l'attribut utilisé pour les filtres croisés."
+
+msgid "Import SLD"
+msgstr "Importer un SLD"
+
 msgid "Service version"
-msgstr "Compte de service"
+msgstr "Version du service"
+
+msgid "Initial Map Center"
+msgstr "Centrage inital de la carte"
+
+msgid "The map center on application start. FIT DATA automatically sets the center so that all data points are included in the viewport. CUSTOM allows users to define the center manually."
+msgstr "Le centre de la carte au démarrage. Ajusté aux données définit automatiquement le centre en sorte que tous les points du jeu de données soient visibles à l'écran. Personnalisé permet à l'utilisateur de définir manuellement le centre."
+
+msgid "Map Padding"
+msgstr "Marge de la carte"
+
+msgid "Set the map extent padding. The selected value is applied to all edges of the map."
+msgstr "Applique une marge sur l'étendue de la carte. La valeur sélectionnée est appliquée à tous les bords de la carte."
+
+msgid "Min Zoom"
+msgstr "Zoom min."
+
+msgid "The minimal zoom of the map"
+msgstr "Le zoom minimal accepté pour la carte."
+
+msgid "Max Zoom"
+msgstr "Zoom max."
+
+msgid "The maximal zoom of the map"
+msgstr "Le zoom maximal accepté pour la carte."
+
+msgid "Max. Extent"
+msgstr "Etendue max."
+
+msgid "The constrained extent of the map on application start. NONE won't set any constrained extent. CUSTOM allows users to define the extent manually based on the current shown map extent."
+msgstr "Limite maxi d'étendue de la carte au démarrage. Aucune n'en configure pas. Personnalisé permet à l'utilisateur de définir manuellement une étendue en s'appuyant sur l'étendue actuellement affichée pour la carte."
+
+msgid "NONE"
+msgstr "Aucune"
 
 msgid "Set System Dark Theme"
 msgstr "Définir le thème sombre du système"
@@ -13762,9 +13882,9 @@ msgid ""
 "the extent so that all data points are included in the viewport. CUSTOM "
 "allows users to define the extent manually."
 msgstr ""
-"L'étendue de la carte au démarrage de l'application. FIT DATA définit "
+"L'étendue de la carte au démarrage de l'application. Ajusté aux données définit "
 "automatiquement l'étendue pour inclure tous les points de données dans la"
-" vue. CUSTOM permet aux utilisateurs de définir manuellement l'étendue."
+" vue. Personnalisé permet aux utilisateurs de définir manuellement l'étendue."
 
 msgid "The feature property to use for point labels"
 msgstr ""
@@ -16405,7 +16525,7 @@ msgid "WED"
 msgstr "MER"
 
 msgid "WFS"
-msgstr "WMS"
+msgstr "WFS"
 
 msgid "WMS"
 msgstr "WMS"

@@ -283,3 +283,12 @@ USER root
 RUN uv pip install .[duckdb]
 USER superset
 CMD ["/app/docker/entrypoints/docker-ci.sh"]
+
+######################################################################
+# geOrchestra image
+######################################################################
+FROM lean AS georchestra
+USER root
+RUN uv pip install .[postgres,duckdb]
+USER superset
+CMD ["/app/docker/entrypoints/run-server.sh"]
